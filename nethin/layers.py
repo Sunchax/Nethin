@@ -982,10 +982,12 @@ class Convolution2DTranspose(convolutional.Convolution2DTranspose):
             # Infer the dynamic output shape:
             out_height = conv_utils.deconv_length(height,
                                                   stride_h, kernel_h,
-                                                  self.padding)
+                                                  self.padding,
+                                                  output_padding=None)
             out_width = conv_utils.deconv_length(width,
                                                  stride_w, kernel_w,
-                                                 self.padding)
+                                                 self.padding,
+                                                 output_padding=None)
 
             if self.data_format == "channels_last":
                 output_shape = (batch_size,

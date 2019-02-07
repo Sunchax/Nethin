@@ -3285,26 +3285,29 @@ class GAN(BaseModel):
         if y is None:
             y = np.zeros([batch_size, 1])
 
-        # Train discriminator
-        if self.instance_noise is not None:
-            noise = np.random.randn(*x.shape) \
-                * (float(self.instance_noise) / float(self._batch_updates + 1))
-            noise = noise.astype(x.dtype)
-            loss_D_real = model_D.train_on_batch(x + noise, y)
-        else:
-            loss_D_real = model_D.train_on_batch(x, y)
+        facit_x = np.zeros([batch_size, 1])
 
-        z = np.random.normal(0.0, 1.0, size=(batch_size,) + self.input_shape)
-        x_fake = model_G.predict_on_batch(z)
+        # Train discriminator
+
+#        if use_filter:
+#            noise = np.random.randn(*x.shape) \
+#                * (float(self.instance_noise) / float(self._batch_updates + 1))
+#            noise = noise.astype(x.dtype)
+#            loss_D_real = model_D.train_on_batch(x + noise, y)
+#        else:
+        loss_D_real = model_D.train_on_batch(x, facit_x)
+
+        #z = np.random.normal(0.0, 1.0, size=(batch_size,) + self.input_shape)
+        x_fake = model_G.predict_on_batch(x)
         y_fake = np.ones([batch_size, 1])
 
-        if self.instance_noise is not None:
-            noise = np.random.randn(*x.shape) \
-                * (float(self.instance_noise) / float(self._batch_updates + 1))
-            noise = noise.astype(x.dtype)
-            loss_D_fake = model_D.train_on_batch(x_fake + noise, y_fake)
-        else:
-            loss_D_fake = model_D.train_on_batch(x_fake, y_fake)
+#        if use_filter:
+#            noise = np.random.randn(*x.shape) \
+#                * (float(self.instance_noise) / float(self._batch_updates + 1))
+#            noise = noise.astype(x.dtype)
+#            loss_D_fake = model_D.train_on_batch(x_fake + noise, y_fake)
+#        else:
+        loss_D_fake = model_D.train_on_batch(x_fake, y_fake)
 
         loss_D = (0.5 * np.add(loss_D_real, loss_D_fake)).tolist()
 
@@ -3316,9 +3319,10 @@ class GAN(BaseModel):
         loss_GAN = None
         if (self._batch_updates + 1) % self.num_iter_discriminator == 0:
 
-            z = np.random.normal(0.0, 1.0,
-                                 size=(batch_size,) + self.input_shape)
-            loss_GAN = model_GAN.train_on_batch(z, y)
+            #z = np.random.normal(0.0, 1.0,
+            #                     size=(batch_size,) + self.input_shape)
+            gan_facit = np.ones([batch_size, 1])
+            loss_GAN = model_GAN.train_on_batch(x, gan_facit)
 
             self._iterations += 1
 
