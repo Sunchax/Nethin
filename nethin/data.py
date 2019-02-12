@@ -45,6 +45,7 @@ except (ImportError):
         _HAS_PYDICOM = True
     except (ImportError):
         _HAS_PYDICOM = False
+        
 
 try:
     import pandas as pd
@@ -1047,7 +1048,8 @@ class SQLiteDataset(BaseDataset):
                             or (value.shape[1] != tensor.shape[1]):
                         raise RuntimeError("The data in the database are "
                                            "of different sizes. Use "
-                                           "``transform`` to resize the "
+                                           "``transform`` to 
+                                           the "
                                            "slices.")
 
                     tensor[:, :, 0, channel_id_i] = value
