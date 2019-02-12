@@ -2295,6 +2295,11 @@ class UNet(BaseModel):
         return model
 
 
+    def summary(self):
+
+        return self.model.summary()
+
+
 class DenseNet(BaseModel):
     """Generates the DenseNet architechture of Huang et al. (2015) [1]_.
 
@@ -3295,7 +3300,7 @@ class GAN(BaseModel):
 #            noise = noise.astype(x.dtype)
 #            loss_D_real = model_D.train_on_batch(x + noise, y)
 #        else:
-        loss_D_real = model_D.train_on_batch(x, facit_x)
+        loss_D_real = model_D.train_on_batch(y, facit_x)
 
         #z = np.random.normal(0.0, 1.0, size=(batch_size,) + self.input_shape)
         x_fake = model_G.predict_on_batch(x)
@@ -3334,6 +3339,11 @@ class GAN(BaseModel):
                               model_GAN.metrics_names]
 
         return loss_D, loss_D_real, loss_D_fake, loss_GAN
+    
+        def _gan_predict(x):
+            
+            model_G, model_D, model_GAN = self._model
+            return model_G.predic_on_batch(x)
 
 
 class WassersteinGAN(BaseModel):
