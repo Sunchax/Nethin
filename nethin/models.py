@@ -3379,8 +3379,8 @@ class GAN(BaseModel):
 
         #z = np.random.normal(0.0, 1.0, size=(batch_size,) + self.input_shape)
         x_fake = model_G.predict_on_batch(x)
-        y_fake = np.ones([batch_size, 1]) - label_noise2
-
+        y_fake = np.ones([batch_size, 1])
+        
 #        if use_filter:
 #            noise = np.random.randn(*x.shape) \
 #                * (float(self.instance_noise) / float(self._batch_updates + 1))
@@ -3388,7 +3388,7 @@ class GAN(BaseModel):
 #            loss_D_fake = model_D.train_on_batch(x_fake + noise, y_fake)
 #        else:
 
-        loss_D_fake = model_D.train_on_batch(x_fake, y_fake)
+        loss_D_fake = model_D.train_on_batch(x_fake, (y_fake-label_noise2))
 
         loss_D = (0.5 * np.add(loss_D_real, loss_D_fake)).tolist()
 
@@ -3403,7 +3403,7 @@ class GAN(BaseModel):
             #z = np.random.normal(0.0, 1.0,
             #                     size=(batch_size,) + self.input_shape)
             #gan_facit = np.zeros([batch_size, 1])
-            loss_GAN = model_GAN.train_on_batch(x, facit_y)
+            loss_GAN = model_GAN.train_on_batch(x, (facit_y+label_noise))
 
             self._iterations += 1
 
