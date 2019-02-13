@@ -3368,11 +3368,26 @@ class GAN(BaseModel):
 
         return loss_D, loss_D_real, loss_D_fake, loss_GAN
     
-        def _gan_predict(x):
-            
-            model_G, model_D, model_GAN = self._model
-            return model_G.predic_on_batch(x)
+    def _gan_predict(self, x):
+        
+        model_G, model_D, model_GAN = self._model
+        return model_G.predic_on_batch(x)
 
+    def save_models(self, G_path=None, D_path=None):
+        
+        if(G_path is not None and D_path is not None):
+            model_G, model_D, model_GAN = self._model
+        
+            model_G.save(G_path)
+            model_D.save(D_path)
+            
+    def load_models(self, G_path=None, D_path=None):
+        
+        if(G_path is not None and D_path is not None):
+            model_G = load_model(G_path)
+            model_D =load_model(D_path)
+
+        return (model_G, model_D)    
 
 class WassersteinGAN(BaseModel):
     """A Wasserstein Generative Adversarial Network [1]_.
