@@ -56,6 +56,8 @@ import nethin.padding as padding
 import nethin.layers as layers
 import nethin.losses as losses
 
+import random
+
 __all__ = ["BaseModel",
            "ConvolutionalNetwork", "FullyConvolutionalNetwork", "UNet", "GAN"]
 
@@ -3315,10 +3317,12 @@ class GAN(BaseModel):
         assert(model_GAN is not None)
 
         batch_size = x.shape[0]
+        
+        label_noise = random.sample(range(batch_size), [0,0.01])
         if y is None:
             y = np.zeros([batch_size, 1])
 
-        facit_x = np.zeros([batch_size, 1])
+        facit_y = (np.zeros([batch_size, 1])+label_noise )
 
         # Train discriminator
 
@@ -3328,11 +3332,12 @@ class GAN(BaseModel):
 #            noise = noise.astype(x.dtype)
 #            loss_D_real = model_D.train_on_batch(x + noise, y)
 #        else:
-        loss_D_real = model_D.train_on_batch(y, facit_x)
+        loss_D_real = model_D.train_on_batch(y, facit_y)
 
         #z = np.random.normal(0.0, 1.0, size=(batch_size,) + self.input_shape)
         x_fake = model_G.predict_on_batch(x)
-        y_fake = np.ones([batch_size, 1])
+        label_noise = random.sample(range(batch_size), [0,0.01])
+        y_fake = np.ones([batch_size, 1]) - label_noise
 
 #        if use_filter:
 #            noise = np.random.randn(*x.shape) \
@@ -3340,6 +3345,7 @@ class GAN(BaseModel):
 #            noise = noise.astype(x.dtype)
 #            loss_D_fake = model_D.train_on_batch(x_fake + noise, y_fake)
 #        else:
+
         loss_D_fake = model_D.train_on_batch(x_fake, y_fake)
 
         loss_D = (0.5 * np.add(loss_D_real, loss_D_fake)).tolist()
@@ -3354,8 +3360,8 @@ class GAN(BaseModel):
 
             #z = np.random.normal(0.0, 1.0,
             #                     size=(batch_size,) + self.input_shape)
-            gan_facit = np.ones([batch_size, 1])
-            loss_GAN = model_GAN.train_on_batch(x, gan_facit)
+            #gan_facit = np.zeros([batch_size, 1])
+            loss_GAN = model_GAN.train_on_batch(x, facit_y)
 
             self._iterations += 1
 
