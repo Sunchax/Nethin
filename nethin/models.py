@@ -3359,11 +3359,13 @@ class GAN(BaseModel):
             label_noise2.append(random.uniform(0, 0.01))   
         label_noise = np.array(label_noise)
         label_noise2 = np.array(label_noise)
+        label_noise = np.resize(label_noise, (batch_size, 1))
+        label_noise2 = np.resize(label_noise2, (batch_size, 1))
         
         if y is None:
             y = np.zeros([batch_size, 1])
 
-        facit_y = (np.zeros([batch_size, 1])+label_noise)
+        facit_y = (np.zeros([batch_size, 1]))
 
         # Train discriminator
 
