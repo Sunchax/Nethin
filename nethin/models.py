@@ -3318,11 +3318,21 @@ class GAN(BaseModel):
 
         batch_size = x.shape[0]
         
-        label_noise = random.sample(range(batch_size), [0,0.01])
+        # Adds random noise to the label data, this can help in the convergence 
+        # of the GAN network
+        label_noise = []
+        label_noise2 = []
+        
+        for i in range(batch_size):
+            label_noise.append(random.uniform(0, 0.01))
+            label_noise2.append(random.uniform(0, 0.01))   
+        label_noise = np.array(label_noise)
+        label_noise2 = np.array(label_noise)
+        
         if y is None:
             y = np.zeros([batch_size, 1])
 
-        facit_y = (np.zeros([batch_size, 1])+label_noise )
+        facit_y = (np.zeros([batch_size, 1])+label_noise)
 
         # Train discriminator
 
@@ -3336,8 +3346,7 @@ class GAN(BaseModel):
 
         #z = np.random.normal(0.0, 1.0, size=(batch_size,) + self.input_shape)
         x_fake = model_G.predict_on_batch(x)
-        label_noise = random.sample(range(batch_size), [0,0.01])
-        y_fake = np.ones([batch_size, 1]) - label_noise
+        y_fake = np.ones([batch_size, 1]) - label_noise2
 
 #        if use_filter:
 #            noise = np.random.randn(*x.shape) \
