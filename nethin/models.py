@@ -3398,7 +3398,7 @@ class GAN(BaseModel):
     def _gan_predict(self, x):
         
         model_G, model_D, model_GAN = self._model
-        return model_G.predic_on_batch(x)
+        return model_G.predict_on_batch(x)
 
     def save_models(self, G_path=None, D_path=None):
         
@@ -3927,7 +3927,7 @@ class WassersteinGAN(BaseModel):
     def _gan_predict(self, x):
         
         model_G, model_D, model_GAN = self._model
-        return model_G.predic_on_batch(x)
+        return model_G.predict_on_batch(x)
 
     def save_models(self, G_path=None, D_path=None):
         
