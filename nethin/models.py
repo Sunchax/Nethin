@@ -3374,7 +3374,7 @@ class GAN(BaseModel):
         x_fake = model_G.predict_on_batch(x)
         y_fake = np.ones([batch_size, 1])
         
-        loss_D_fake = model_D.train_on_batch(x_fake, (y_fake-label_noise2))
+        loss_D_fake = model_D.train_on_batch(x_fake, y_fake)
 
         loss_D = (0.5 * np.add(loss_D_real, loss_D_fake)).tolist()
 
@@ -3382,7 +3382,7 @@ class GAN(BaseModel):
         loss_GAN = None
         if (self._batch_updates + 1) % self.num_iter_discriminator == 0:
 
-            loss_GAN = model_GAN.train_on_batch(x, (facit_y+label_noise))
+            loss_GAN = model_GAN.train_on_batch(x, facit_y)
 
             self._iterations += 1
 
@@ -3893,13 +3893,14 @@ class WassersteinGAN(BaseModel):
 
         # Train discriminator
         batch_size = x.shape[0]
-        real_facit = np.zeros([batch_size, 1])
+        y_facit = np.zeros([batch_size, 1])
 
-        loss_D_real = model_D.train_on_batch(x, real_facit)
+        loss_D_real = model_D.train_on_batch(y, y_facit)
 
-        fake_facit = np.ones([batch_size, 1])
-        fake_data = model_G.predict_on_batch(x)
-        loss_D_fake = model_D.train_on_batch(fake_data, fake_facit)
+        y_fake_facit = np.ones([batch_size, 1])
+        y_fake = model_G.predict_on_batch(x)
+        
+        loss_D_fake = model_D.train_on_batch(y_fake, y_fake_facit)
 
         if isinstance(loss_D_fake, (list, tuple)):
             wasserstein_loss = -1 * loss_D_real[0] - loss_D_fake[0]
@@ -3911,7 +3912,7 @@ class WassersteinGAN(BaseModel):
         if (self._batch_updates == 0) \
                 or ((self._batch_updates + 1) % d_iters == 0):
 
-            loss_GAN = model_GAN.train_on_batch(x, real_facit)
+            loss_GAN = model_GAN.train_on_batch(x, y_facit)
 
             self._iterations += 1
 
