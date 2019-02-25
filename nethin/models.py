@@ -3320,16 +3320,16 @@ class GAN(BaseModel):
         
         # Adds random noise to the label data, this can help in the convergence 
         # of the GAN network
-        label_noise = []
-        label_noise2 = []
+        #label_noise = []
+        #label_noise2 = []
         
-        for i in range(batch_size):
-            label_noise.append(random.uniform(0, 0.01))
-            label_noise2.append(random.uniform(0, 0.01))   
-        label_noise = np.array(label_noise)
-        label_noise2 = np.array(label_noise)
-        label_noise = np.resize(label_noise, (batch_size, 1))
-        label_noise2 = np.resize(label_noise2, (batch_size, 1))
+        #for i in range(batch_size):
+        #    label_noise.append(random.uniform(0, 0.01))
+        #    label_noise2.append(random.uniform(0, 0.01))   
+        #label_noise = np.array(label_noise)
+        #label_noise2 = np.array(label_noise)
+        #label_noise = np.resize(label_noise, (batch_size, 1))
+        #label_noise2 = np.resize(label_noise2, (batch_size, 1))
         
         if y is None:
             y = np.zeros([batch_size, 1])
@@ -3338,40 +3338,19 @@ class GAN(BaseModel):
 
         # Train discriminator
 
-#        if use_filter:
-#            noise = np.random.randn(*x.shape) \
-#                * (float(self.instance_noise) / float(self._batch_updates + 1))
-#            noise = noise.astype(x.dtype)
-#            loss_D_real = model_D.train_on_batch(x + noise, y)
-#        else:
         loss_D_real = model_D.train_on_batch(y, facit_y)
 
-        #z = np.random.normal(0.0, 1.0, size=(batch_size,) + self.input_shape)
         x_fake = model_G.predict_on_batch(x)
         y_fake = np.ones([batch_size, 1])
         
-#        if use_filter:
-#            noise = np.random.randn(*x.shape) \
-#                * (float(self.instance_noise) / float(self._batch_updates + 1))
-#            noise = noise.astype(x.dtype)
-#            loss_D_fake = model_D.train_on_batch(x_fake + noise, y_fake)
-#        else:
-
         loss_D_fake = model_D.train_on_batch(x_fake, (y_fake-label_noise2))
 
         loss_D = (0.5 * np.add(loss_D_real, loss_D_fake)).tolist()
-
-#        im = np.concatenate((x, im_fake))
-#        _y = np.zeros([2 * batch_size, 1])
-#        _y[batch_size:, :] = 1
 
         # Train GAN model (the generator part)
         loss_GAN = None
         if (self._batch_updates + 1) % self.num_iter_discriminator == 0:
 
-            #z = np.random.normal(0.0, 1.0,
-            #                     size=(batch_size,) + self.input_shape)
-            #gan_facit = np.zeros([batch_size, 1])
             loss_GAN = model_GAN.train_on_batch(x, (facit_y+label_noise))
 
             self._iterations += 1
@@ -3883,14 +3862,13 @@ class WassersteinGAN(BaseModel):
 
         # Train discriminator
         batch_size = x.shape[0]
-        y_ = np.ones([batch_size, 1])
+        real_facit = np.zeros([batch_size, 1])
 
-        loss_D_real = model_D.train_on_batch(x, y_)
+        loss_D_real = model_D.train_on_batch(x, real_facit)
 
-        noise = np.random.normal(0.0, 1.0,
-                                 size=(batch_size,) + self.input_shape)
-        x_ = model_G.predict_on_batch(noise)
-        loss_D_fake = model_D.train_on_batch(x_, -y_)
+        fake_facit = np.ones([batch_size, 1])
+        fake_data = model_G.predict_on_batch(x)
+        loss_D_fake = model_D.train_on_batch(fake_data, fake_facit)
 
         if isinstance(loss_D_fake, (list, tuple)):
             wasserstein_loss = -1 * loss_D_real[0] - loss_D_fake[0]
@@ -3902,10 +3880,7 @@ class WassersteinGAN(BaseModel):
         if (self._batch_updates == 0) \
                 or ((self._batch_updates + 1) % d_iters == 0):
 
-            noise = np.random.normal(0.0, 1.0,
-                                     size=(batch_size,) + self.input_shape)
-
-            loss_GAN = model_GAN.train_on_batch(noise, y_)
+            loss_GAN = model_GAN.train_on_batch(x, real_facit)
 
             self._iterations += 1
 
@@ -3918,6 +3893,26 @@ class WassersteinGAN(BaseModel):
 
         return wasserstein_loss, loss_D_real, loss_D_fake, loss_GAN
 
+    def _gan_predict(self, x):
+        
+        model_G, model_D, model_GAN = self._model
+        return model_G.predic_on_batch(x)
+
+    def save_models(self, G_path=None, D_path=None):
+        
+        if(G_path is not None and D_path is not None):
+            model_G, model_D, model_GAN = self._model
+        
+            model_G.save(G_path)
+            model_D.save(D_path)
+            
+    def load_models(self, G_path=None, D_path=None):
+        
+        if(G_path is not None and D_path is not None):
+            model_G = load_model(G_path)
+            model_D =load_model(D_path)
+
+        return (model_G, model_D)   
 
 if __name__ == "__main__":
     import doctest
