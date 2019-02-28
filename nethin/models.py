@@ -3279,7 +3279,7 @@ class GAN(BaseModel):
         model_D.compile(optimizer=optimizer[0],
                         loss=loss[0],
                         metrics=metrics[0])
-
+        
         if model_GAN is None:
             model_GAN = self._model_GAN_factory(model_G, model_D)
 
@@ -3945,6 +3945,383 @@ class WassersteinGAN(BaseModel):
             model_D =load_model(D_path)
 
         return (model_G, model_D)   
+
+
+class CycleGAN(BaseModel):
+
+    def __init__(self,
+                 input_shape,
+                 output_shape,
+                 generator,
+                 discriminator,
+                 num_iter_discriminator=1,
+                 instance_noise=1.0,
+                 data_format=None,
+                 device=None,
+                 name="CycleGAN"):
+
+        super(CycleGAN, self).__init__("nethin.models.CycleGAN",
+                                  data_format=data_format,
+                                  device=device,
+                                  name=name)
+
+        if input_shape is not None:
+            if not isinstance(input_shape, (tuple, list)):
+                raise ValueError('"input_shape" must be a tuple.')
+        self.input_shape = tuple([int(d) for d in input_shape])
+
+        if output_shape is not None:
+            if not isinstance(output_shape, (tuple, list)):
+                raise ValueError('"data_shape" must be a tuple.')
+        self.output_shape = tuple([int(d) for d in output_shape])
+
+        self.generator = generator
+        self.discriminator = discriminator
+        #self.generator_BA = generator
+        #self.discriminator_BA = discriminator
+        self.num_iter_discriminator = max(1, int(num_iter_discriminator))
+        if instance_noise is None:
+            self.instance_noise = instance_noise
+        else:
+            self.instance_noise = max(0.0, float(instance_noise))
+
+        if self.data_format == "channels_last":
+            self._axis = 3
+        else:  # data_format == "channels_first":
+            self._axis = 1
+
+        self._model = self._with_device(self._generate_model)
+        self._batch_updates = 0
+        self._iterations = 0
+
+    def _generate_model(self):
+
+        self._D = self.discriminator()
+        self._G = self.generator()
+
+        def _generate_D():
+
+            inputs = Input(shape=self.output_shape)
+            outputs = self._D(inputs)
+            model_D = Model(inputs, outputs)
+
+            return model_D
+
+        def _generate_G():
+
+            inputs = Input(shape=self.input_shape)
+            outputs = self._G(inputs)
+            model_G = Model(inputs, outputs)
+
+            return model_G
+
+        def _generate_GAN(G, D):
+
+            inputs = Input(shape=self.input_shape)
+            x = G(inputs)
+            D.trainable = False
+            outputs = D(x)
+
+            model_GAN = Model(inputs, outputs)
+
+            return model_GAN
+        
+        def _generate_c_G(G, F):
+            
+            inputs = Input(shape=self.input_shape)
+            x = G(inputs)
+            outputs = F(x)
+            
+            model_c_GAN = Model(inputs, outputs)
+            
+            return model_c_GAN
+
+        model_D_B = _generate_D()
+        model_D_A = _generate_D()
+
+        model_G_AB = _generate_G()
+        model_G_BA = _generate_G()
+
+        self._model_GAN_factory = _generate_GAN
+        self._model_Circel_Gen_factory = _generate_c_G
+
+        return [model_G_AB, model_D_B, model_G_BA, model_D_A, None]
+
+    def compile(self,
+                optimizer,
+                loss,
+                metrics=None,
+                loss_weights=None,
+                sample_weight_mode=None,
+                weighted_metrics=None,
+                target_tensors=None):
+        """Configures the model for training.
+
+        Parameters
+        ----------
+        optimizer : str, keras.optimizers.Optimizer or list of str or
+                    keras.optimizers.Optimizer, length 2
+            String (name of optimizer) or optimizer object. See
+            `optimizers <https://keras.io/optimizers>`_. If a list, the first
+            optimiser is used for the discriminator and the second optimiser is
+            used for the adversarial model.
+
+        loss : str or list of str, length 2
+            String (name of objective function) or objective function. See
+            `losses <https://keras.io/losses>`_. If a list, the first loss is
+            used for the discriminator and the second loss is used for the
+            adversarial model, third will be used for cyclic generator.
+
+         metrics : list of str or list of list of str, length 2, optional
+             List of metrics to be evaluated by the model during training and
+             testing. Typically you will use ``metrics=["accuracy"]``. If a
+             list of lists of str, the first list of metrics are used for the
+             discriminator and the second list of metrics is used for the
+             adversarial model.
+
+        loss_weights : list or dict, optional
+            Currently ignored by this model.
+
+        sample_weight_mode : None, str, list or dict, optional
+            Currently ignored by this model.
+
+        weighted_metrics : list, optional
+            Currently ignored by this model.
+
+        target_tensors : Tensor, optional
+            Currently ignored by this model.
+
+        **kwargs
+            When using the Theano/CNTK backends, these arguments are passed
+            into ``K.function``. When using the TensorFlow backend, these
+            arguments are passed into ``tf.Session.run``.
+
+        Raises
+        ------
+        ValueError
+            In case of invalid arguments for ``optimizer``, ``loss``,
+            ``metrics`` or ``sample_weight_mode``.
+        """
+        if (weighted_metrics is None) and (target_tensors is None):
+            # Recent additions to compile may not be available.
+            self._with_device(self._compile,
+                              optimizer,
+                              loss,
+                              metrics=metrics,
+                              loss_weights=loss_weights,
+                              sample_weight_mode=sample_weight_mode)
+        else:
+            self._with_device(self._compile,
+                              optimizer,
+                              loss,
+                              metrics=metrics,
+                              loss_weights=loss_weights,
+                              sample_weight_mode=sample_weight_mode,
+                              weighted_metrics=weighted_metrics,
+                              target_tensors=target_tensors)
+
+    def _compile(self,
+                 optimizer,
+                 loss,
+                 metrics=None,
+                 loss_weights=None,
+                 sample_weight_mode=None,
+                 weighted_metrics=None,
+                 target_tensors=None):
+
+        optimizer = utils.normalize_object(optimizer, 2, "optimizers")
+        loss = utils.normalize_str(loss, 3, "losses")
+        if metrics is not None:
+            if isinstance(metrics, list):
+                if isinstance(metrics[0], str):
+                    metrics = (metrics,) * 2
+                elif not isinstance(metrics, list):
+                    raise ValueError('The "metrics" argument must be a list '
+                                     'of str or a list of a list of str.')
+            else:
+                raise ValueError('The "metrics" argument must be a list of '
+                                 'str or a list of a list of str.')
+        else:
+            metrics = [metrics, metrics]
+
+        model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
+
+        model_D_B.compile(optimizer=optimizer[0],
+                        loss=loss[0],
+                        metrics=metrics[0])
+        
+        model_D_A.compile(optimizer=optimizer[0],
+                loss=loss[0],
+                metrics=metrics[0])
+
+        model_GAN_AB = self._model_GAN_factory(model_G_AB, model_D_B)
+
+        model_GAN_BA = self._model_GAN_factory(model_G_BA, model_D_A)
+
+        
+        model_G_ABA = self._model_Circel_Gen_factory(model_G_AB, model_G_BA)
+        model_G_BAB = self._model_Circel_Gen_factory(model_G_BA, model_G_AB)
+
+        In_A = Input(shape=self.input_shape)
+        In_B = Input(shape=self.input_shape)
+
+        if model_combined is None:
+            model_combined = Model(inputs=[In_A, In_B], 
+                                   outputs=[model_GAN_AB(In_A), model_GAN_BA(In_B), 
+                                            model_G_ABA(In_A), model_G_BAB(In_B)])
+
+        lambda_cycle = 10
+
+        model_combined.compile(loss=[loss[1], loss[1],
+                                     loss[2], loss[2]],
+                                loss_weights=[1, 1, lambda_cycle, lambda_cycle],
+                                optimizer=optimizer[1])
+        
+        self._model = [model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined]
+    
+    def train_on_batch(self,
+                       x,
+                       y=None,
+                       sample_weight=None,
+                       class_weight=None):
+        """Runs a single gradient update on a single batch of data.
+
+        Arguments
+        ---------
+        x : numpy.ndarray or list of numpy.ndarray or dict of numpy.ndarray
+            Numpy array of training data, or list of Numpy arrays if the model
+            has multiple inputs. If all inputs in the model are named, you can
+            also pass a dictionary mapping input names to Numpy arrays.
+
+        y : numpy.ndarray or list of numpy.ndarray or dict of numpy.ndarray,
+            optional
+            Numpy array of target data, or list of Numpy arrays if the model
+            has multiple outputs. If all outputs in the model are named, you
+            can also pass a dictionary mapping output names to Numpy arrays.
+
+        sample_weight : numpy.ndarray, optional
+            Optional array of the same length as ``x``, containing weights to
+            apply to the model's loss for each sample. In the case of temporal
+            data, you can pass a 2D array with shape (samples,
+            sequence_length), to apply a different weight to every timestep of
+            every sample. In this case you should make sure to specify
+            ``sample_weight_mode="temporal"`` in ``compile()``.
+
+        class_weight : dict, optional
+            Optional dictionary mapping class indices (integers) to a weight
+            (float) to apply to the model's loss for the samples from this
+            class during training. This can be useful to tell the model to
+            "pay more attention" to samples from an under-represented class.
+
+        Returns
+        -------
+        Scalar training loss (if the model has a single output and no metrics)
+        or list of scalars (if the model has multiple outputs and/or metrics).
+        The attribute ``model.metrics_names`` will give you the display labels
+        for the scalar outputs. Returns the discriminator loss followed by the
+        adversarial model's loss.
+        """
+        return self._with_device(self._train_on_batch,
+                                 x,
+                                 y,
+                                 sample_weight=sample_weight,
+                                 class_weight=class_weight)
+
+    def _train_on_batch(self,
+                        x,
+                        y=None,
+                        sample_weight=None,
+                        class_weight=None):
+
+        model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
+
+        assert(model_combined is not None)
+
+        batch_size = x.shape[0]
+        
+        # Adds random noise to the label data, this can help in the convergence 
+        # of the GAN network
+        #label_noise = []
+        #label_noise2 = []
+        
+        #for i in range(batch_size):
+        #    label_noise.append(random.uniform(0, 0.01))
+        #    label_noise2.append(random.uniform(0, 0.01))   
+        #label_noise = np.array(label_noise)
+        #label_noise2 = np.array(label_noise)
+        #label_noise = np.resize(label_noise, (batch_size, 1))
+        #label_noise2 = np.resize(label_noise2, (batch_size, 1))
+        
+        if y is None:
+            y = np.zeros([batch_size, 1])
+
+        facit_real = np.zeros([batch_size, 1])
+        facit_fake = np.ones([batch_size, 1])
+
+        # Create fake images with generator
+
+        y_fake = model_G_AB.predict_on_batch(x)
+        x_fake = model_G_BA.predict_on_batch(y)
+
+        # Train discriminator
+
+        loss_D_AB_real = model_D_B.train_on_batch(y, facit_real)
+        loss_D_AB_fake = model_D_B.train_on_batch(y_fake, facit_fake)
+        loss_D_AB = (0.5 * np.add(loss_D_AB_real, loss_D_AB_fake)).tolist()
+                
+        loss_D_BA_real = model_D_A.train_on_batch(x, facit_real)
+        loss_D_BA_fake = model_D_A.train_on_batch(x_fake, facit_fake)
+        loss_D_BA = (0.5 * np.add(loss_D_BA_real, loss_D_BA_fake)).tolist()
+        
+        loss_D = (0.5 * np.add(loss_D_AB, loss_D_BA))
+        
+        # Train combined model
+        loss_combined = None
+        if (self._batch_updates + 1) % self.num_iter_discriminator == 0:
+
+            loss_combined = model_combined.train_on_batch([x, y], [facit_real, facit_real, x, y])
+
+            self._iterations += 1
+
+        self._batch_updates += 1
+
+        self.metrics_names = [model_D_AB.metrics_names,
+                              "DiscriminatorReal",
+                              "DiscriminatorFake",
+                              model_combined.metrics_names]
+
+        return loss_D, loss_D_AB, loss_D_BA, loss_combined
+    
+    def _gan_predict(self, x):
+        
+        model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
+        return model_G_AB.predict_on_batch(x)
+
+    def save_models(self, G_path=None, D_path=None):
+        #This wont work..
+        
+        assert(model_GAN_AB is not None)
+        assert(model_GAN_BA is not None)
+        assert(model_combined is not None)
+        
+        if(G_path is not None and D_path is not None):
+            model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
+        
+            model_G_AB.save(G_path)
+            #model_G_BA.save()
+            model_D_B.save()
+            #model_D_A.save()
+            model_D.save(D_path)
+#            model_combined.save("combinedpath... blah)
+            
+    def load_models(self, G_path=None, D_path=None):
+        
+        if(G_path is not None and D_path is not None):
+            model_G = load_model(G_path)
+            model_D =load_model(D_path)
+
+        return (model_G, model_D)    
+             
 
 if __name__ == "__main__":
     import doctest
