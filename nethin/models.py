@@ -3369,21 +3369,37 @@ class GAN(BaseModel):
         model_G, model_D, model_GAN = self._model
         return model_G.predict_on_batch(x)
 
-    def save_models(self, G_path=None, D_path=None):
+    def save_models(self, dir_path, file_names=["g_G.h5", "g_D.h5"]):
+    
+        if(len(file_names) != 2):
+            #Throw exception
         
-        if(G_path is not None and D_path is not None):
+        if(dir_path is not None):
+        
+            #Should save .txt file with meta-data
+            
+            G_path = dir_path + "/" + file_name[0]
+            D_path = dir_path + "/" + file_name[1]  
+            
             model_G, model_D, model_GAN = self._model
         
             model_G.save(G_path)
             model_D.save(D_path)
             
-    def load_models(self, G_path=None, D_path=None):
+    def load_models(self, dir_path, file_names=["g_G.h5", "g_D.h5"]):
         
-        if(G_path is not None and D_path is not None):
+        if(dir_path is not None):
+            
+            if(len(file_names) != 2):
+                #Throw exception
+            
+            G_path = dir_path + "/" + file_name[0]
+            D_path = dir_path + "/" + file_name[1]  
+            
             model_G = load_model(G_path)
             model_D =load_model(D_path)
 
-        return (model_G, model_D)    
+        return model_G, model_D
 
 class WassersteinGAN(BaseModel):
     """A Wasserstein Generative Adversarial Network [1]_.
@@ -3899,21 +3915,37 @@ class WassersteinGAN(BaseModel):
         model_G, model_D, model_GAN = self._model
         return model_G.predict_on_batch(x)
 
-    def save_models(self, G_path=None, D_path=None):
+    def save_models(self, dir_path, file_names=["w_G.h5", "w_D.h5"]):
+    
+        if(len(file_names) != 2):
+            #Throw exception
         
-        if(G_path is not None and D_path is not None):
+        if(dir_path is not None):
+        
+            #Should save .txt file with meta-data
+            
+            G_path = dir_path + "/" + file_name[0]
+            D_path = dir_path + "/" + file_name[1]  
+            
             model_G, model_D, model_GAN = self._model
         
             model_G.save(G_path)
             model_D.save(D_path)
             
-    def load_models(self, G_path=None, D_path=None):
+    def load_models(self, dir_path, file_names=["w_G.h5", "w_D.h5"]):
         
-        if(G_path is not None and D_path is not None):
+        if(dir_path is not None):
+            
+            if(len(file_names) != 2):
+                #Throw exception
+            
+            G_path = dir_path + "/" + file_name[0]
+            D_path = dir_path + "/" + file_name[1]  
+            
             model_G = load_model(G_path)
             model_D =load_model(D_path)
 
-        return (model_G, model_D)   
+        return model_G, model_D
 
 
 class CycleGAN(BaseModel):
@@ -4266,30 +4298,45 @@ class CycleGAN(BaseModel):
         model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
         return model_G_AB.predict_on_batch(x)
 
-    def save_models(self, G_path=None, D_path=None):
-        #This wont work..
+    def save_models(self, dir_path, file_names=["c_G_ab.h5", "c_D_b.h5", "c_G_ba.h5", "c_D_a.h5"]):
+    
+        if(len(file_names) != 4):
+            #Throw exception
         
-        assert(model_GAN_AB is not None)
-        assert(model_GAN_BA is not None)
-        assert(model_combined is not None)
+        if(dir_path is not None):
         
-        if(G_path is not None and D_path is not None):
+            #Should save .txt file with meta-data
+            
+            G_AB_path = dir_path + "/" + file_name[0]
+            D_B_path = dir_path + "/" + file_name[1]  
+            G_BA_path = dir_path + "/" + file_name[2]
+            D_A_path = dir_path + "/" + file_name[3]              
+            
             model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
         
-            model_G_AB.save(G_path)
-            #model_G_BA.save()
-            model_D_B.save()
-            #model_D_A.save()
-            model_D.save(D_path)
-#            model_combined.save("combinedpath... blah)
+            model_G_AB.save(G_AB_path)
+            model_D_B.save(D_B_path)
+            model_G_BA.save(G_BA_path)
+            model_D_A.save(D_A_path)
             
-    def load_models(self, G_path=None, D_path=None):
+    def load_models(self, dir_path, file_names=["c_G.h5", "c_D.h5"]):
         
-        if(G_path is not None and D_path is not None):
-            model_G = load_model(G_path)
-            model_D =load_model(D_path)
+        if(dir_path is not None):
+            
+            if(len(file_names) != 4):
+                #Throw exception
+            
+            G_AB_path = dir_path + "/" + file_name[0]
+            D_B_path = dir_path + "/" + file_name[1]  
+            G_BA_path = dir_path + "/" + file_name[2]
+            D_A_path = dir_path + "/" + file_name[3] 
+            
+            model_G_AB = load_model(G_AB_path)
+            model_D_B =load_model(D_B_path)
+            model_G_BA = load_model(G_BA_path)
+            model_D_A =load_model(D_A_path)
 
-        return (model_G, model_D)    
+        return model_G_AB, model_D_B, model_G_BA, model_D_A
              
 
 if __name__ == "__main__":
