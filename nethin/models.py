@@ -3343,6 +3343,8 @@ class GAN(BaseModel):
                         sample_weight=None,
                         class_weight=None):
 
+        add_label_noise=True
+
         model_G, model_D, model_GAN = self._model
 
         assert(model_GAN is not None)
@@ -3353,28 +3355,30 @@ class GAN(BaseModel):
         # of the GAN network
         label_noise = []
         label_noise2 = []
-        
-        for i in range(batch_size):
-            label_noise.append(random.uniform(0, 0.01))
-            label_noise2.append(random.uniform(0, 0.01))   
-        label_noise = np.array(label_noise)
-        label_noise2 = np.array(label_noise)
-        label_noise = np.resize(label_noise, (batch_size, 1))
-        label_noise2 = np.resize(label_noise2, (batch_size, 1))
+        if(add_label_noise):
+            for i in range(batch_size):
+                label_noise.append(random.uniform(0, 0.01))
+                label_noise2.append(random.uniform(0, 0.01))   
+            label_noise = np.array(label_noise)
+            label_noise2 = np.array(label_noise2)
+            label_noise = np.resize(label_noise, (batch_size, 1))
+            label_noise2 = np.resize(label_noise2, (batch_size, 1))
+        else:
+            label_noise = np.zeros([batch_size, 1])
+            label_noise2 = np.zeros([batch_size, 1])
         
         if y is None:
             y = np.zeros([batch_size, 1])
 
-        facit_y = (np.zeros([batch_size, 1])+label_noise)
+        real_label = np.zeros([batch_size, 1])
 
         # Train discriminator
-
-        loss_D_real = model_D.train_on_batch(y, facit_y)
+        loss_D_real = model_D.train_on_batch(y, real_label+label_noise)
 
         x_fake = model_G.predict_on_batch(x)
-        y_fake = np.ones([batch_size, 1]) - label_noise2
+        fake_label = np.ones([batch_size, 1])
         
-        loss_D_fake = model_D.train_on_batch(x_fake, y_fake)
+        loss_D_fake = model_D.train_on_batch(x_fake, fake_label-label_noise2)
 
         loss_D = (0.5 * np.add(loss_D_real, loss_D_fake)).tolist()
 
@@ -3382,7 +3386,7 @@ class GAN(BaseModel):
         loss_GAN = None
         if (self._batch_updates + 1) % self.num_iter_discriminator == 0:
 
-            loss_GAN = model_GAN.train_on_batch(x, facit_y)
+            loss_GAN = model_GAN.train_on_batch(x, real_label)
 
             self._iterations += 1
 
