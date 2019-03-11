@@ -3402,7 +3402,7 @@ class GAN(BaseModel):
 
     def save_models(self, dir_path, file_names=["g_G.h5", "g_D.h5"]):
     
-        if(len(file_names) != 2):
+        #if(len(file_names) != 2):
             #Throw exception
         
         if(dir_path is not None):
@@ -3421,7 +3421,7 @@ class GAN(BaseModel):
         
         if(dir_path is not None):
             
-            if(len(file_names) != 2):
+            #if(len(file_names) != 2):
                 #Throw exception
             
             G_path = dir_path + "/" + file_name[0]
@@ -3948,7 +3948,7 @@ class WassersteinGAN(BaseModel):
 
     def save_models(self, dir_path, file_names=["w_G.h5", "w_D.h5"]):
     
-        if(len(file_names) != 2):
+        #if(len(file_names) != 2):
             #Throw exception
         
         if(dir_path is not None):
@@ -3967,7 +3967,7 @@ class WassersteinGAN(BaseModel):
         
         if(dir_path is not None):
             
-            if(len(file_names) != 2):
+            #if(len(file_names) != 2):
                 #Throw exception
             
             G_path = dir_path + "/" + file_name[0]
@@ -4331,7 +4331,7 @@ class CycleGAN(BaseModel):
 
     def save_models(self, dir_path, file_names=["c_G_ab.h5", "c_D_b.h5", "c_G_ba.h5", "c_D_a.h5"]):
     
-        if(len(file_names) != 4):
+        #if(len(file_names) != 4):
             #Throw exception
         
         if(dir_path is not None):
@@ -4354,7 +4354,7 @@ class CycleGAN(BaseModel):
         
         if(dir_path is not None):
             
-            if(len(file_names) != 4):
+            #if(len(file_names) != 4):
                 #Throw exception
             
             G_AB_path = dir_path + "/" + file_name[0]
