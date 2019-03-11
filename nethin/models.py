@@ -3351,28 +3351,28 @@ class GAN(BaseModel):
         
         # Adds random noise to the label data, this can help in the convergence 
         # of the GAN network
-        #label_noise = []
-        #label_noise2 = []
+        label_noise = []
+        label_noise2 = []
         
-        #for i in range(batch_size):
-        #    label_noise.append(random.uniform(0, 0.01))
-        #    label_noise2.append(random.uniform(0, 0.01))   
-        #label_noise = np.array(label_noise)
-        #label_noise2 = np.array(label_noise)
-        #label_noise = np.resize(label_noise, (batch_size, 1))
-        #label_noise2 = np.resize(label_noise2, (batch_size, 1))
+        for i in range(batch_size):
+            label_noise.append(random.uniform(0, 0.01))
+            label_noise2.append(random.uniform(0, 0.01))   
+        label_noise = np.array(label_noise)
+        label_noise2 = np.array(label_noise)
+        label_noise = np.resize(label_noise, (batch_size, 1))
+        label_noise2 = np.resize(label_noise2, (batch_size, 1))
         
         if y is None:
             y = np.zeros([batch_size, 1])
 
-        facit_y = (np.zeros([batch_size, 1]))
+        facit_y = (np.zeros([batch_size, 1])+label_noise)
 
         # Train discriminator
 
         loss_D_real = model_D.train_on_batch(y, facit_y)
 
         x_fake = model_G.predict_on_batch(x)
-        y_fake = np.ones([batch_size, 1])
+        y_fake = np.ones([batch_size, 1]) - label_noise2
         
         loss_D_fake = model_D.train_on_batch(x_fake, y_fake)
 
@@ -4338,7 +4338,7 @@ class CycleGAN(BaseModel):
 
         if(len(file_names) != 4):
             #Throw exception
-            raise ValueError('Need four file-names, recieved ' + str(len(file_names))
+            raise ValueError('Need four file-names, recieved ' + str(len(file_names)))
         
         if(dir_path is not None):
         
@@ -4363,7 +4363,7 @@ class CycleGAN(BaseModel):
 
             if(len(file_names) != 4):
                 #Throw exception
-                raise ValueError('Need four file-names, recieved ' + str(len(file_names))
+                raise ValueError('Need four file-names, recieved ' + str(len(file_names)))
             
             G_AB_path = dir_path + "/" + file_name[0]
             D_B_path = dir_path + "/" + file_name[1]  
