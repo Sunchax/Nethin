@@ -3415,8 +3415,8 @@ class GAN(BaseModel):
         
             #Should save .txt file with meta-data
             
-            G_path = dir_path + "/" + file_name[0]
-            D_path = dir_path + "/" + file_name[1]  
+            G_path = dir_path + "/" + file_names[0]
+            D_path = dir_path + "/" + file_names[1]  
             
             model_G, model_D, model_GAN = self._model
         
@@ -3430,8 +3430,8 @@ class GAN(BaseModel):
                 #Throw exception
                 raise ValueError('Need two file-names, recieved ' + str(len(file_names)))
             
-            G_path = dir_path + "/" + file_name[0]
-            D_path = dir_path + "/" + file_name[1]  
+            G_path = dir_path + "/" + file_names[0]
+            D_path = dir_path + "/" + file_names[1]  
             
             model_G = load_model(G_path)
             model_D =load_model(D_path)
@@ -3962,8 +3962,8 @@ class WassersteinGAN(BaseModel):
         
             #Should save .txt file with meta-data
             
-            G_path = dir_path + "/" + file_name[0]
-            D_path = dir_path + "/" + file_name[1]  
+            G_path = dir_path + "/" + file_names[0]
+            D_path = dir_path + "/" + file_names[1]  
             
             model_G, model_D, model_GAN = self._model
         
@@ -3978,8 +3978,8 @@ class WassersteinGAN(BaseModel):
                 #Throw exception
                 raise ValueError('Need two file-names, recieved ' + str(len(file_names)))
             
-            G_path = dir_path + "/" + file_name[0]
-            D_path = dir_path + "/" + file_name[1]  
+            G_path = dir_path + "/" + file_names[0]
+            D_path = dir_path + "/" + file_names[1]  
             
             model_G = load_model(G_path)
             model_D =load_model(D_path)
@@ -4325,7 +4325,7 @@ class CycleGAN(BaseModel):
 
         self._batch_updates += 1
 
-        self.metrics_names = [model_D_AB.metrics_names,
+        self.metrics_names = [model_D_B.metrics_names,
                               "DiscriminatorReal",
                               "DiscriminatorFake",
                               model_combined.metrics_names]
@@ -4348,10 +4348,10 @@ class CycleGAN(BaseModel):
         
             #Should save .txt file with meta-data
             
-            G_AB_path = dir_path + "/" + file_name[0]
-            D_B_path = dir_path + "/" + file_name[1]  
-            G_BA_path = dir_path + "/" + file_name[2]
-            D_A_path = dir_path + "/" + file_name[3]              
+            G_AB_path = dir_path + "/" + file_names[0]
+            D_B_path = dir_path + "/" + file_names[1]  
+            G_BA_path = dir_path + "/" + file_names[2]
+            D_A_path = dir_path + "/" + file_names[3]              
             
             model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
         
@@ -4369,10 +4369,10 @@ class CycleGAN(BaseModel):
                 #Throw exception
                 raise ValueError('Need four file-names, recieved ' + str(len(file_names)))
             
-            G_AB_path = dir_path + "/" + file_name[0]
-            D_B_path = dir_path + "/" + file_name[1]  
-            G_BA_path = dir_path + "/" + file_name[2]
-            D_A_path = dir_path + "/" + file_name[3] 
+            G_AB_path = dir_path + "/" + file_names[0]
+            D_B_path = dir_path + "/" + file_names[1]  
+            G_BA_path = dir_path + "/" + file_names[2]
+            D_A_path = dir_path + "/" + file_names[3] 
             
             model_G_AB = load_model(G_AB_path)
             model_D_B =load_model(D_B_path)
