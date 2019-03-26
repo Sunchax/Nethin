@@ -4195,9 +4195,7 @@ class CycleGAN(BaseModel):
                 metrics=metrics[0])
 
         model_GAN_AB = self._model_GAN_factory(model_G_AB, model_D_B)
-
         model_GAN_BA = self._model_GAN_factory(model_G_BA, model_D_A)
-
         
         model_G_ABA = self._model_Circel_Gen_factory(model_G_AB, model_G_BA)
         model_G_BAB = self._model_Circel_Gen_factory(model_G_BA, model_G_AB)
