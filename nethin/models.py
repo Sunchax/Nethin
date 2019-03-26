@@ -4279,16 +4279,16 @@ class CycleGAN(BaseModel):
         
         # Adds random noise to the label data, this can help in the convergence 
         # of the GAN network
-        #label_noise = []
-        #label_noise2 = []
+        label_noise = []
+        label_noise2 = []
         
-        #for i in range(batch_size):
-        #    label_noise.append(random.uniform(0, 0.01))
-        #    label_noise2.append(random.uniform(0, 0.01))   
-        #label_noise = np.array(label_noise)
-        #label_noise2 = np.array(label_noise)
-        #label_noise = np.resize(label_noise, (batch_size, 1))
-        #label_noise2 = np.resize(label_noise2, (batch_size, 1))
+        for i in range(batch_size):
+            label_noise.append(random.uniform(0, 0.01))
+            label_noise2.append(random.uniform(0, 0.01))   
+        label_noise = np.array(label_noise)
+        label_noise2 = np.array(label_noise)
+        label_noise = np.resize(label_noise, (batch_size, 1))
+        label_noise2 = np.resize(label_noise2, (batch_size, 1))
         
         if y is None:
             y = np.zeros([batch_size, 1])
@@ -4303,12 +4303,12 @@ class CycleGAN(BaseModel):
 
         # Train discriminator
 
-        loss_D_AB_real = model_D_B.train_on_batch(y, facit_real)
-        loss_D_AB_fake = model_D_B.train_on_batch(y_fake, facit_fake)
+        loss_D_AB_real = model_D_B.train_on_batch(y, facit_real+label_noise)
+        loss_D_AB_fake = model_D_B.train_on_batch(y_fake, facit_fake-label_noise2)
         loss_D_AB = (0.5 * np.add(loss_D_AB_real, loss_D_AB_fake)).tolist()
                 
-        loss_D_BA_real = model_D_A.train_on_batch(x, facit_real)
-        loss_D_BA_fake = model_D_A.train_on_batch(x_fake, facit_fake)
+        loss_D_BA_real = model_D_A.train_on_batch(x, facit_real+label_noise)
+        loss_D_BA_fake = model_D_A.train_on_batch(x_fake, facit_fake-label_noise2)
         loss_D_BA = (0.5 * np.add(loss_D_BA_real, loss_D_BA_fake)).tolist()
         
         loss_D = (0.5 * np.add(loss_D_AB, loss_D_BA))
