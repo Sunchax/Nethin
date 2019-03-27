@@ -4346,8 +4346,8 @@ class CycleGAN(BaseModel):
 
         # Create fake images with generator
 
-        y_fake = model_G_AB.predict_on_batch(x)
-        x_fake = model_G_BA.predict_on_batch(y)
+        y_fake = self._G_A2B.predict_on_batch(x)
+        x_fake = self._G_B2A.predict_on_batch(y)
 
         # Train discriminator
 
@@ -4380,8 +4380,7 @@ class CycleGAN(BaseModel):
     
     def _gan_predict(self, x):
         
-        model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
-        return model_G_AB.predict_on_batch(x)
+        return self._G_A2B.predict_on_batch(x)
 
     def save_models(self, dir_path, file_names=["c_G_ab.h5", "c_D_b.h5", "c_G_ba.h5", "c_D_a.h5"]):
     
