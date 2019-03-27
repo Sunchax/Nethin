@@ -4018,8 +4018,6 @@ class CycleGAN(BaseModel):
 
         self.generator = generator
         self.discriminator = discriminator
-        #self.generator_BA = generator
-        #self.discriminator_BA = discriminator
         self.num_iter_discriminator = max(1, int(num_iter_discriminator))
         if instance_noise is None:
             self.instance_noise = instance_noise
@@ -4107,13 +4105,10 @@ class CycleGAN(BaseModel):
         self._static_D_B = Network(inputs=input_B, outputs=guess_B, name="static_D_B")
         
         self._real_A = Input(shape=self.input_shape, name="real_A")
-        self._real_B = Input(shape=self.input_shape, name="real_B")
+        self._real_B = Input(shape=self.input_shape, name="real_B")        
         
-        G_AB = self._G_A2B(self._real_A)
-        G_BA = self._G_B2A(self._real_B)
-        
-        model_G_AB = G_AB#Model(inputs=self._real_A, outputs=G_AB, name="G_A2B")
-        model_G_BA = G_BA#Model(inputs=self._real_B, outputs=G_BA, name="G_B2A")
+        model_G_AB = self._G_A2B(self._real_A)
+        model_G_BA = self._G_B2A(self._real_B)
         
         
         self._model_GAN_factory = _generate_GAN
@@ -4247,7 +4242,7 @@ class CycleGAN(BaseModel):
         model_GAN_BA = self._static_D_A(model_G_BA)
         
         model_GAN_ABA= self._G_B2A(model_G_AB)
-        model_GAN_BAB= self._G_B2A(model_G_BA)
+        model_GAN_BAB= self._G_A2B(model_G_BA)
         
         model_outputs= [model_GAN_AB, model_GAN_BA, model_GAN_ABA, model_GAN_BAB, ]
 
