@@ -4379,7 +4379,7 @@ class CycleGAN(BaseModel):
         
         return self._G_A2B.predict_on_batch(x)
 
-    def save_models(self, dir_path, file_names=["c_G_ab.h5", "c_D_b.h5", "c_G_ba.h5", "c_D_a.h5"]):
+    def save_models(self, dir_path, file_names=["c_G_A2B.h5", "c_D_A.h5", "c_G_B2A.h5", "c_D_B.h5"]):
     
 
         if(len(file_names) != 4):
@@ -4391,16 +4391,14 @@ class CycleGAN(BaseModel):
             #Should save .txt file with meta-data
             
             G_AB_path = dir_path + "/" + file_names[0]
-            D_B_path = dir_path + "/" + file_names[1]  
-            G_BA_path = dir_path + "/" + file_names[2]
-            D_A_path = dir_path + "/" + file_names[3]              
-            
-            model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
-        
-            model_G_AB.save(G_AB_path)
-            model_D_B.save(D_B_path)
-            model_G_BA.save(G_BA_path)
-            model_D_A.save(D_A_path)
+            D_A_path = dir_path + "/" + file_names[1]
+            G_BA_path = dir_path + "/" + file_names[2]    
+            D_B_path = dir_path + "/" + file_names[3]  
+       
+            self._D_A.save(D_A_path)
+            self._D_B.save(D_B_path)
+            self._G_A2B.save(G_AB_path)
+            self._G_B2A.save(G_BA_path)
             
     def load_models(self, dir_path, file_names=["c_G_ab.h5", "c_D_b.h5", "c_G_ba.h5", "c_D_a.h5"]):
         
@@ -4412,16 +4410,16 @@ class CycleGAN(BaseModel):
                 raise ValueError('Need four file-names, recieved ' + str(len(file_names)))
             
             G_AB_path = dir_path + "/" + file_names[0]
-            D_B_path = dir_path + "/" + file_names[1]  
-            G_BA_path = dir_path + "/" + file_names[2]
-            D_A_path = dir_path + "/" + file_names[3] 
+            D_A_path = dir_path + "/" + file_names[1]
+            G_BA_path = dir_path + "/" + file_names[2]    
+            D_B_path = dir_path + "/" + file_names[3]  
             
             model_G_AB = load_model(G_AB_path)
             model_D_B =load_model(D_B_path)
             model_G_BA = load_model(G_BA_path)
             model_D_A =load_model(D_A_path)
 
-        return model_G_AB, model_D_B, model_G_BA, model_D_A
+        return model_G_AB, model_D_A, model_G_BA, model_D_B
              
 
 if __name__ == "__main__":
