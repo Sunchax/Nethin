@@ -4036,7 +4036,9 @@ class CycleGAN(BaseModel):
     def _generate_model(self):
 
         self._D_A = self.discriminator()
+        self._D_A.name="_D_A"
         self._D_B = self.discriminator()
+        self._D_B.name="_D_B"
         self._G_A2B = self.generator()
         self._G_A2B.name="UNet_A2B"
         self._G_A2B.model.name="UNet_A2B"
@@ -4249,7 +4251,7 @@ class CycleGAN(BaseModel):
 
         if model_combined is None:
             model_combined = Model(inputs=[self._real_A, self._real_B], 
-                                   outputs=model_outputs)
+                                   outputs=model_outputs, name="CycleGAN")
 
         lambda_cycle = 10
 
@@ -4314,7 +4316,7 @@ class CycleGAN(BaseModel):
                         sample_weight=None,
                         class_weight=None):
 
-        model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
+        model_G_AB, model_D_A, model_G_BA, model_D_B, model_combined = self._model
 
         assert(model_combined is not None)
 
