@@ -4036,9 +4036,9 @@ class CycleGAN(BaseModel):
     def _generate_model(self):
 
         self._D_A = self.discriminator()
-        self._D_A.name="_D_A"
+        self._D_A.name="D_A"
         self._D_B = self.discriminator()
-        self._D_B.name="_D_B"
+        self._D_B.name="D_B"
         self._G_A2B = self.generator()
         self._G_A2B.name="UNet_A2B"
         self._G_A2B.model.name="UNet_A2B"
@@ -4372,6 +4372,8 @@ class CycleGAN(BaseModel):
                               "DiscriminatorReal",
                               "DiscriminatorFake",
                               model_combined.metrics_names]
+        
+        self._model = model_G_AB, model_D_A, model_G_BA, model_D_B, model_combined
 
         return loss_D, loss_D_AB, loss_D_BA, loss_combined
     
