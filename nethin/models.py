@@ -4187,11 +4187,11 @@ class CycleGAN(BaseModel):
         model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
 
         model_D_B.compile(optimizer=optimizer[0],
-                        loss=loss[0],
+                        loss=loss[1],
                         metrics=metrics[0])
         
         model_D_A.compile(optimizer=optimizer[0],
-                loss=loss[0],
+                loss=loss[1],
                 metrics=metrics[0])
 
         model_GAN_AB = self._model_GAN_factory(model_G_AB, model_D_B)
