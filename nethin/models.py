@@ -55,6 +55,7 @@ import nethin.utils as utils
 import nethin.padding as padding
 import nethin.layers as layers
 import nethin.losses as losses
+from keras.engine.topology import Network
 
 import random
 
@@ -4017,8 +4018,6 @@ class CycleGAN(BaseModel):
 
         self.generator = generator
         self.discriminator = discriminator
-        #self.generator_BA = generator
-        #self.discriminator_BA = discriminator
         self.num_iter_discriminator = max(1, int(num_iter_discriminator))
         if instance_noise is None:
             self.instance_noise = instance_noise
@@ -4036,12 +4035,25 @@ class CycleGAN(BaseModel):
 
     def _generate_model(self):
 
-        self._D = self.discriminator()
-        self._G = self.generator()
+        self._D_A = self.discriminator()
+        self._D_A.name="D_A"
+        self._D_B = self.discriminator()
+        self._D_B.name="D_B"
+        self._G_A2B = self.generator()
+        self._G_A2B.name="UNet_A2B"
+        self._G_A2B.model.name="UNet_A2B"
+        self._G_B2A = self.generator()
+        self._G_A2B.name="UNet_B2A"
+        self._G_A2B.model.name="UNet_B2A"
+        input_A = Input(shape=self.output_shape, name="image_A")
+        input_B = Input(shape=self.output_shape, name="image_B")
 
-        def _generate_D():
+        def _generate_D(input=None):
 
-            inputs = Input(shape=self.output_shape)
+            if input is None:
+                inputs = Input(shape=self.output_shape)
+            else:
+                inputs = input
             outputs = self._D(inputs)
             model_D = Model(inputs, outputs)
 
@@ -4059,7 +4071,6 @@ class CycleGAN(BaseModel):
 
             inputs = Input(shape=self.input_shape)
             x = G(inputs)
-            D.trainable = False
             outputs = D(x)
 
             model_GAN = Model(inputs, outputs)
@@ -4075,17 +4086,37 @@ class CycleGAN(BaseModel):
             model_c_GAN = Model(inputs, outputs)
             
             return model_c_GAN
+        
+#        model_D_A = _generate_D(self._input_A)
+#        model_D_A.name = "D_A"
+#        model_D_B = _generate_D(self._input_B)
+#        model_D_B.name = "D_B"
+            
+        guess_A = self._D_A(input_A)
+        guess_B = self._D_B(input_B)
+        
+        model_D_A = Model(inputs=input_A, outputs=guess_A, name="D_A")
+        model_D_B = Model(inputs=input_B, outputs=guess_B, name="D_B")
 
-        model_D_B = _generate_D()
-        model_D_A = _generate_D()
-
-        model_G_AB = _generate_G()
-        model_G_BA = _generate_G()
-
+#        model_G_AB = _generate_G()
+#        model_G_AB.name = "G_AB"
+#        model_G_BA = _generate_G()
+#        model_G_BA.name = "G_BA"
+        
+        self._static_D_A = Network(inputs=input_A, outputs=guess_A, name="static_D_A")
+        self._static_D_B = Network(inputs=input_B, outputs=guess_B, name="static_D_B")
+        
+        self._real_A = Input(shape=self.input_shape, name="real_A")
+        self._real_B = Input(shape=self.input_shape, name="real_B")        
+        
+        model_G_AB = self._G_A2B(self._real_A)
+        model_G_BA = self._G_B2A(self._real_B)
+        
+        
         self._model_GAN_factory = _generate_GAN
         self._model_Circel_Gen_factory = _generate_c_G
 
-        return [model_G_AB, model_D_B, model_G_BA, model_D_A, None]
+        return [model_G_AB, model_D_A, model_G_BA, model_D_B, None]
 
     def compile(self,
                 optimizer,
@@ -4184,29 +4215,44 @@ class CycleGAN(BaseModel):
         else:
             metrics = [metrics, metrics]
 
-        model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
+        model_G_AB, model_D_A, model_G_BA, model_D_B, model_combined = self._model
 
-        model_D_B.compile(optimizer=optimizer[0],
-                        loss=loss[1],
-                        metrics=metrics[0])
-        
+
         model_D_A.compile(optimizer=optimizer[0],
-                loss=loss[1],
-                metrics=metrics[0])
-
-        model_GAN_AB = self._model_GAN_factory(model_G_AB, model_D_B)
-        model_GAN_BA = self._model_GAN_factory(model_G_BA, model_D_A)
+                    loss=loss[1],
+                    metrics=metrics[0])
         
-        model_G_ABA = self._model_Circel_Gen_factory(model_G_AB, model_G_BA)
-        model_G_BAB = self._model_Circel_Gen_factory(model_G_BA, model_G_AB)
+        model_D_B.compile(optimizer=optimizer[0],
+                    loss=loss[1],
+                    metrics=metrics[0])
+        
+        self._static_D_A.trainable = False
+        self._static_D_B.trainable = False
 
-        In_A = Input(shape=self.input_shape)
-        In_B = Input(shape=self.input_shape)
+#        model_GAN_AB = self._model_GAN_factory(model_G_AB, model_D_B)
+#        model_GAN_BA = self._model_GAN_factory(model_G_BA, model_D_A)
+#        
+#        model_GAN_AB.name="GAN_AB"
+#        model_GAN_BA.name="GAN_BA"
+#        
+#        model_G_ABA = self._model_Circel_Gen_factory(model_G_AB, model_G_BA)
+#        model_G_BAB = self._model_Circel_Gen_factory(model_G_BA, model_G_AB)
+#        
+#        model_G_ABA.name="G_ABA"
+#        model_G_BAB.name="G_BAB"
+        
+        model_GAN_AB = self._static_D_B(model_G_AB)
+        model_GAN_BA = self._static_D_A(model_G_BA)
+        
+        model_GAN_ABA= self._G_B2A(model_G_AB)
+        model_GAN_BAB= self._G_A2B(model_G_BA)
+        
+        model_outputs= [model_GAN_AB, model_GAN_BA, model_GAN_ABA, model_GAN_BAB, ]
+
 
         if model_combined is None:
-            model_combined = Model(inputs=[In_A, In_B], 
-                                   outputs=[model_GAN_AB(In_A), model_GAN_BA(In_B), 
-                                            model_G_ABA(In_A), model_G_BAB(In_B)])
+            model_combined = Model(inputs=[self._real_A, self._real_B], 
+                                   outputs=model_outputs, name="CycleGAN")
 
         lambda_cycle = 10
 
@@ -4215,7 +4261,7 @@ class CycleGAN(BaseModel):
                                 loss_weights=[1, 1, lambda_cycle, lambda_cycle],
                                 optimizer=optimizer[1])
         
-        self._model = [model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined]
+        self._model = [model_G_AB, model_D_A, model_G_BA, model_D_B, model_combined]
     
     def train_on_batch(self,
                        x,
@@ -4271,7 +4317,7 @@ class CycleGAN(BaseModel):
                         sample_weight=None,
                         class_weight=None):
 
-        model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
+        model_G_AB, model_D_A, model_G_BA, model_D_B, model_combined = self._model
 
         assert(model_combined is not None)
 
@@ -4298,8 +4344,8 @@ class CycleGAN(BaseModel):
 
         # Create fake images with generator
 
-        y_fake = model_G_AB.predict_on_batch(x)
-        x_fake = model_G_BA.predict_on_batch(y)
+        y_fake = self._G_A2B.predict_on_batch(x)
+        x_fake = self._G_B2A.predict_on_batch(y)
 
         # Train discriminator
 
@@ -4327,15 +4373,16 @@ class CycleGAN(BaseModel):
                               "DiscriminatorReal",
                               "DiscriminatorFake",
                               model_combined.metrics_names]
+        
+        self._model = model_G_AB, model_D_A, model_G_BA, model_D_B, model_combined
 
         return loss_D, loss_D_AB, loss_D_BA, loss_combined
     
     def _gan_predict(self, x):
         
-        model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
-        return model_G_AB.predict_on_batch(x)
+        return self._G_A2B.predict_on_batch(x)
 
-    def save_models(self, dir_path, file_names=["c_G_ab.h5", "c_D_b.h5", "c_G_ba.h5", "c_D_a.h5"]):
+    def save_models(self, dir_path, file_names=["c_G_A2B.h5", "c_D_A.h5", "c_G_B2A.h5", "c_D_B.h5"]):
     
 
         if(len(file_names) != 4):
@@ -4347,16 +4394,14 @@ class CycleGAN(BaseModel):
             #Should save .txt file with meta-data
             
             G_AB_path = dir_path + "/" + file_names[0]
-            D_B_path = dir_path + "/" + file_names[1]  
-            G_BA_path = dir_path + "/" + file_names[2]
-            D_A_path = dir_path + "/" + file_names[3]              
-            
-            model_G_AB, model_D_B, model_G_BA, model_D_A, model_combined = self._model
-        
-            model_G_AB.save(G_AB_path)
-            model_D_B.save(D_B_path)
-            model_G_BA.save(G_BA_path)
-            model_D_A.save(D_A_path)
+            D_A_path = dir_path + "/" + file_names[1]
+            G_BA_path = dir_path + "/" + file_names[2]    
+            D_B_path = dir_path + "/" + file_names[3]  
+       
+            self._D_A.save(D_A_path)
+            self._D_B.save(D_B_path)
+            self._G_A2B.save(G_AB_path)
+            self._G_B2A.save(G_BA_path)
             
     def load_models(self, dir_path, file_names=["c_G_ab.h5", "c_D_b.h5", "c_G_ba.h5", "c_D_a.h5"]):
         
@@ -4368,16 +4413,16 @@ class CycleGAN(BaseModel):
                 raise ValueError('Need four file-names, recieved ' + str(len(file_names)))
             
             G_AB_path = dir_path + "/" + file_names[0]
-            D_B_path = dir_path + "/" + file_names[1]  
-            G_BA_path = dir_path + "/" + file_names[2]
-            D_A_path = dir_path + "/" + file_names[3] 
+            D_A_path = dir_path + "/" + file_names[1]
+            G_BA_path = dir_path + "/" + file_names[2]    
+            D_B_path = dir_path + "/" + file_names[3]  
             
             model_G_AB = load_model(G_AB_path)
             model_D_B =load_model(D_B_path)
             model_G_BA = load_model(G_BA_path)
             model_D_A =load_model(D_A_path)
 
-        return model_G_AB, model_D_B, model_G_BA, model_D_A
+        return model_G_AB, model_D_A, model_G_BA, model_D_B
              
 
 if __name__ == "__main__":
