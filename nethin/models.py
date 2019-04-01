@@ -3281,6 +3281,8 @@ class GAN(BaseModel):
                         loss=loss[0],
                         metrics=metrics[0])
         
+        mode
+        
         if model_GAN is None:
             model_GAN = self._model_GAN_factory(model_G, model_D)
 
@@ -4086,22 +4088,12 @@ class CycleGAN(BaseModel):
             model_c_GAN = Model(inputs, outputs)
             
             return model_c_GAN
-        
-#        model_D_A = _generate_D(self._input_A)
-#        model_D_A.name = "D_A"
-#        model_D_B = _generate_D(self._input_B)
-#        model_D_B.name = "D_B"
             
         guess_A = self._D_A(input_A)
         guess_B = self._D_B(input_B)
         
         model_D_A = Model(inputs=input_A, outputs=guess_A, name="D_A")
         model_D_B = Model(inputs=input_B, outputs=guess_B, name="D_B")
-
-#        model_G_AB = _generate_G()
-#        model_G_AB.name = "G_AB"
-#        model_G_BA = _generate_G()
-#        model_G_BA.name = "G_BA"
         
         self._static_D_A = Network(inputs=input_A, outputs=guess_A, name="static_D_A")
         self._static_D_B = Network(inputs=input_B, outputs=guess_B, name="static_D_B")
