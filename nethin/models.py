@@ -4209,13 +4209,14 @@ class CycleGAN(BaseModel):
 
         model_G_AB, model_D_A, model_G_BA, model_D_B, model_combined = self._model
 
+
         model_D_A.compile(optimizer=optimizer[0],
-                        loss=loss[0],
-                        metrics=metrics[0])
+                    loss=loss[1],
+                    metrics=metrics[0])
         
         model_D_B.compile(optimizer=optimizer[0],
-                loss=loss[0],
-                metrics=metrics[0])
+                    loss=loss[1],
+                    metrics=metrics[0])
         
         self._static_D_A.trainable = False
         self._static_D_B.trainable = False
@@ -4247,7 +4248,7 @@ class CycleGAN(BaseModel):
 
         lambda_cycle = 10
 
-        model_combined.compile(loss=[loss[0], loss[0],
+        model_combined.compile(loss=[loss[1], loss[1],
                                      loss[2], loss[2]],
                                 loss_weights=[1, 1, lambda_cycle, lambda_cycle],
                                 optimizer=optimizer[1])
