@@ -4373,6 +4373,10 @@ class CycleGAN(BaseModel):
     def _gan_predict(self, x):
         
         return self._G_A2B.predict_on_batch(x)
+    
+    def _gan_reverse_predict(self, y):
+        
+        return self._G_B2A.predict_on_batch(y)
 
     def save_models(self, dir_path, file_names=["c_G_A2B.h5", "c_D_A.h5", "c_G_B2A.h5", "c_D_B.h5"]):
     
