@@ -3903,7 +3903,8 @@ class WassersteinGAN(BaseModel):
                         x,
                         y=None,
                         sample_weight=None,
-                        class_weight=None):
+                        class_weight=None,
+                        add_label_noise=True):
 
         model_G, model_D, model_GAN = self._model
 
@@ -3915,17 +3916,33 @@ class WassersteinGAN(BaseModel):
             d_iters = max(self.num_iter_discriminator, self.boost_batches)
         else:
             d_iters = self.num_iter_discriminator
+            
+        batch_size = x.shape[0]
+            
+        label_noise = []
+        label_noise2 = []
+        if(add_label_noise):
+            for i in range(batch_size):
+                label_noise.append(random.uniform(0, 0.01))
+                label_noise2.append(random.uniform(0, 0.01))   
+            label_noise = np.array(label_noise)
+            label_noise2 = np.array(label_noise2)
+            label_noise = np.resize(label_noise, (batch_size, 1))
+            label_noise2 = np.resize(label_noise2, (batch_size, 1))
+        else:
+            label_noise = np.zeros([batch_size, 1])
+            label_noise2 = np.zeros([batch_size, 1])
 
         # Train discriminator
-        batch_size = x.shape[0]
+        
         y_facit = np.zeros([batch_size, 1])
 
-        loss_D_real = model_D.train_on_batch(y, y_facit)
+        loss_D_real = model_D.train_on_batch(y, y_facit+label_noise)
 
         y_fake_facit = np.ones([batch_size, 1])
         y_fake = model_G.predict_on_batch(x)
         
-        loss_D_fake = model_D.train_on_batch(y_fake, y_fake_facit)
+        loss_D_fake = model_D.train_on_batch(y_fake, y_fake_facit-label_noise2)
 
         if isinstance(loss_D_fake, (list, tuple)):
             wasserstein_loss = -1 * loss_D_real[0] - loss_D_fake[0]
@@ -3937,7 +3954,7 @@ class WassersteinGAN(BaseModel):
         if (self._batch_updates == 0) \
                 or ((self._batch_updates + 1) % d_iters == 0):
 
-            loss_GAN = model_GAN.train_on_batch(x, y_facit)
+            loss_GAN = model_GAN.train_on_batch(x, y_facit+label_noise)
 
             self._iterations += 1
 
