@@ -4447,7 +4447,7 @@ class PGAN(BaseModel):
                  device=None,
                  name="PGAN"):
 
-        super(GAN, self).__init__("nethin.models.PGAN",
+        super(PGAN, self).__init__("nethin.models.PGAN",
                                   data_format=data_format,
                                   device=device,
                                   name=name)
