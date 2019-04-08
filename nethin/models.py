@@ -4782,12 +4782,12 @@ class PGAN(BaseModel):
 
         return model_G, model_D
     
-    def grow_gan(self, img_shape):
+    def grow_gan(self, input_shape, output_shape):
         (optimizer, loss, metrics, loss_weights, sample_weight_mode,
                              weighted_metrics, target_tensors) = self._compile_input
         self.pgan.grow_model()
-        self.input_shape=img_shape
-        self.output_shape=img_shape
+        self.input_shape=input_shape
+        self.output_shape=output_shape
         self._model = self._with_device(self._generate_model)
         self.compile(optimizer, loss, metrics, loss_weights, sample_weight_mode, weighted_metrics, target_tensors)
         
