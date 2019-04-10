@@ -56,6 +56,7 @@ import nethin.padding as padding
 import nethin.layers as layers
 import nethin.losses as losses
 from keras.engine.topology import Network
+import gc
 
 import random
 
@@ -4104,8 +4105,8 @@ class CycleGAN(BaseModel):
             
             return model_c_GAN
             
-        guess_A = self._D_A(input_A)
-        guess_B = self._D_B(input_B)
+        guess_A = self._D_A(input_B)
+        guess_B = self._D_B(input_A)
         
         model_D_A = Model(inputs=input_B, outputs=guess_A, name="D_A")
         model_D_B = Model(inputs=input_A, outputs=guess_B, name="D_B")
@@ -4776,6 +4777,8 @@ class PGAN(BaseModel):
         self.pgan.grow_model()
         self.input_shape=input_shape
         self.output_shape=output_shape
+        self._model= None
+        gc.collect()
         self._model = self._with_device(self._generate_model)
         self.compile(optimizer, loss, metrics, loss_weights, sample_weight_mode, weighted_metrics, target_tensors)
         
