@@ -4736,6 +4736,9 @@ class PGAN(BaseModel):
         
         model_G, model_D, model_GAN = self._model
         return model_G.predict_on_batch(x)
+    
+    def _get_alpha(self):
+        return self.pgan.alpha
 
     def save_models(self, dir_path, file_names=["g_G.h5", "g_D.h5"]):
     
