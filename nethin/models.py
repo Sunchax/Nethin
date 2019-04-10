@@ -4105,14 +4105,14 @@ class CycleGAN(BaseModel):
             
             return model_c_GAN
             
-        guess_A = self._D_A(input_B)
-        guess_B = self._D_B(input_A)
+        guess_A = self._D_A(input_A)
+        guess_B = self._D_B(input_B)
         
-        model_D_A = Model(inputs=input_B, outputs=guess_A, name="D_A")
-        model_D_B = Model(inputs=input_A, outputs=guess_B, name="D_B")
+        model_D_A = Model(inputs=input_A, outputs=guess_A, name="D_A")
+        model_D_B = Model(inputs=input_B, outputs=guess_B, name="D_B")
         
-        self._static_D_A = Network(inputs=input_B, outputs=guess_A, name="static_D_A")
-        self._static_D_B = Network(inputs=input_A, outputs=guess_B, name="static_D_B")
+        self._static_D_A = Network(inputs=input_A, outputs=guess_A, name="static_D_A")
+        self._static_D_B = Network(inputs=input_B, outputs=guess_B, name="static_D_B")
         
         self._real_A = Input(shape=self.input_shape, name="real_A")
         self._real_B = Input(shape=self.input_shape, name="real_B")        
@@ -4345,12 +4345,12 @@ class CycleGAN(BaseModel):
 
         # Train discriminator
 
-        loss_D_AB_real = model_D_A.train_on_batch(y, facit_real+label_noise)
-        loss_D_AB_fake = model_D_A.train_on_batch(y_fake, facit_fake-label_noise2)
+        loss_D_AB_real = model_D_B.train_on_batch(y, facit_real+label_noise)
+        loss_D_AB_fake = model_D_B.train_on_batch(y_fake, facit_fake-label_noise2)
         loss_D_AB = (0.5 * np.add(loss_D_AB_real, loss_D_AB_fake)).tolist()
                 
-        loss_D_BA_real = model_D_B.train_on_batch(x, facit_real+label_noise)
-        loss_D_BA_fake = model_D_B.train_on_batch(x_fake, facit_fake-label_noise2)
+        loss_D_BA_real = model_D_A.train_on_batch(x, facit_real+label_noise)
+        loss_D_BA_fake = model_D_A.train_on_batch(x_fake, facit_fake-label_noise2)
         loss_D_BA = (0.5 * np.add(loss_D_BA_real, loss_D_BA_fake)).tolist()
         
         loss_D = (0.5 * np.add(loss_D_AB, loss_D_BA))
