@@ -4359,7 +4359,7 @@ class CycleGAN(BaseModel):
         loss_combined = None
         if (self._batch_updates + 1) % self.num_iter_discriminator == 0:
 
-            loss_combined = model_combined.train_on_batch([x, y], [facit_real, facit_real, x, y])
+            loss_combined = model_combined.train_on_batch([x, y], [facit_real+label_noise, facit_real+label_noise, x, y])
 
             self._iterations += 1
 
