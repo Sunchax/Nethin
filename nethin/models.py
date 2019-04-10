@@ -3903,7 +3903,7 @@ class WassersteinGAN(BaseModel):
                         y=None,
                         sample_weight=None,
                         class_weight=None,
-                        add_label_noise=True):
+                        add_label_noise=False):
 
         model_G, model_D, model_GAN = self._model
 
@@ -3934,7 +3934,7 @@ class WassersteinGAN(BaseModel):
 
         # Train discriminator
         
-        y_facit = np.zeros([batch_size, 1])
+        y_facit = np.fill([batch_size, 1], -1)
 
         loss_D_real = model_D.train_on_batch(y, y_facit+label_noise)
 
