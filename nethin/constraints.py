@@ -15,6 +15,7 @@ from six import with_metaclass
 
 import keras.backend as K
 from keras.utils import conv_utils
+from keras.backend.common import normalize_data_format
 
 __all__ = ["BaseConstraint", "BoxConstraint"]
 
@@ -35,7 +36,7 @@ class BaseConstraint(with_metaclass(abc.ABCMeta, object)):
     """
     def __init__(self, data_format=None):
 
-        self.data_format = conv_utils.normalize_data_format(data_format)
+        self.data_format = normalize_data_format(data_format)
 
     def __call__(self, weights):
         """Constraint function (projection).
