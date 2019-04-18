@@ -3346,12 +3346,15 @@ class GAN(BaseModel):
                         class_weight=None):
 
         add_label_noise=True
+        patch_gan = True
 
         model_G, model_D, model_GAN = self._model
 
         assert(model_GAN is not None)
 
         batch_size = x.shape[0]
+        if(patch_gan == True):
+            batch_size = (batch_size, 1024)
         
         # Adds random noise to the label data, this can help in the convergence 
         # of the GAN network

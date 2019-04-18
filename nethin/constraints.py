@@ -16,11 +16,12 @@ from six import with_metaclass
 import keras.backend as K
 from keras.utils import conv_utils
 from keras.backend.common import normalize_data_format
+from keras.constraints import Constraint
 
 __all__ = ["BaseConstraint", "BoxConstraint"]
 
 
-class BaseConstraint(with_metaclass(abc.ABCMeta, object)):
+class BaseConstraint(Constraint):
     """Base class for constraints.
 
     Parameters
@@ -45,6 +46,8 @@ class BaseConstraint(with_metaclass(abc.ABCMeta, object)):
         """
         return weights
 
+    def get_config(self):
+        return {}
 
 class BoxConstraint(BaseConstraint):
     """Corresponds to a box constraint (upper and lower bounds).
@@ -92,3 +95,6 @@ class BoxConstraint(BaseConstraint):
             The weight matrix for which the constraint should be applied.
         """
         return K.clip(weights, self.lower, self.upper)
+
+    def get_config(self):
+        return {}
