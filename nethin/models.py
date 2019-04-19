@@ -57,6 +57,8 @@ import nethin.layers as layers
 import nethin.losses as losses
 from keras.engine.topology import Network
 import gc
+from functools import reduce
+
 
 import random
 
@@ -3361,16 +3363,17 @@ class GAN(BaseModel):
         label_noise = []
         label_noise2 = []
         if(add_label_noise):
-            for i in range(batch_size):
+            length = reduce(lambda x, y: x*y, list(batch_size))
+            for i in range(length):
                 label_noise.append(random.uniform(0, 0.01))
                 label_noise2.append(random.uniform(0, 0.01))   
             label_noise = np.array(label_noise)
             label_noise2 = np.array(label_noise2)
-            label_noise = np.resize(label_noise, (batch_size, 1))
-            label_noise2 = np.resize(label_noise2, (batch_size, 1))
+            label_noise = np.resize(label_noise, (batch_size))
+            label_noise2 = np.resize(label_noise2, (batch_size))
         else:
-            label_noise = np.zeros([batch_size, 1])
-            label_noise2 = np.zeros([batch_size, 1])
+            label_noise = np.zeros([batch_size])
+            label_noise2 = np.zeros([batch_size])
         
         if y is None:
             y = np.zeros([batch_size, 1])
