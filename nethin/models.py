@@ -4311,9 +4311,12 @@ class CycleGAN(BaseModel):
 
         assert(model_combined is not None)
         
-        add_label_noise= True
+        patch_gan = True
+        add_label_noise= False
 
         batch_size = x.shape[0]
+        if(patch_gan == True):
+            batch_size = (batch_size, 1024)
         
         # Adds random noise to the label data, this can help in the convergence 
         # of the GAN network
@@ -4328,8 +4331,8 @@ class CycleGAN(BaseModel):
             label_noise = np.resize(label_noise, (batch_size, 1))
             label_noise2 = np.resize(label_noise2, (batch_size, 1))
         else:
-            label_noise = np.zeros([batch_size, 1])
-            label_noise2 = np.zeros([batch_size, 1])
+            label_noise = np.zeros(batch_size)
+            label_noise2 = np.zeros(batch_size)
         
         if y is None:
             y = np.zeros([batch_size, 1])
