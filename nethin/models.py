@@ -3367,12 +3367,12 @@ class GAN(BaseModel):
             label_noise = np.array(label_noise)
             label_noise2 = np.array(label_noise2)
 
-        label_noise = np.resize(label_noise, (batch_size,1))
-        label_noise2 = np.resize(label_noise2, (batch_size,1))               
+            label_noise = np.resize(label_noise, (batch_size,1))
+            label_noise2 = np.resize(label_noise2, (batch_size,1))               
 
-
-        label_noise = np.zeros(batch_size, 1)
-        label_noise2 = np.zeros(batch_size, 1)
+        else:
+            label_noise = np.zeros([batch_size, 1])
+            label_noise2 = np.zeros([batch_size, 1])
         
         if y is None:
             y = np.zeros([batch_size, 1])
