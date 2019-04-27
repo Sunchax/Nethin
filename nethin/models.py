@@ -4312,8 +4312,8 @@ class CycleGAN(BaseModel):
 
         assert(model_combined is not None)
         
-        patch_gan = True
-        add_label_noise= False
+        patch_gan = False
+        add_label_noise= True
 
         batch_size = x.shape[0]
         if(patch_gan == True):
