@@ -3348,43 +3348,44 @@ class GAN(BaseModel):
                         class_weight=None):
 
         add_label_noise=True
-        patch_gan = True
-
         model_G, model_D, model_GAN = self._model
 
         assert(model_GAN is not None)
 
         batch_size = x.shape[0]
-        if(patch_gan == True):
-            batch_size = (batch_size, 1024)
         
         # Adds random noise to the label data, this can help in the convergence 
         # of the GAN network
         label_noise = []
         label_noise2 = []
         if(add_label_noise):
-            length = reduce(lambda x, y: x*y, list(batch_size))
+
+            length = batch_size
             for i in range(length):
                 label_noise.append(random.uniform(0, 0.01))
                 label_noise2.append(random.uniform(0, 0.01))   
             label_noise = np.array(label_noise)
             label_noise2 = np.array(label_noise2)
-            label_noise = np.resize(label_noise, (batch_size))
-            label_noise2 = np.resize(label_noise2, (batch_size))
-        else:
-            label_noise = np.zeros([batch_size])
-            label_noise2 = np.zeros([batch_size])
+
+        label_noise = np.resize(label_noise, (batch_size,1))
+        label_noise2 = np.resize(label_noise2, (batch_size,1))               
+
+
+        label_noise = np.zeros(batch_size, 1)
+        label_noise2 = np.zeros(batch_size, 1)
         
         if y is None:
             y = np.zeros([batch_size, 1])
 
         real_label = np.zeros([batch_size, 1])
+        fake_label = np.ones([batch_size, 1])
+            
 
         # Train discriminator
         loss_D_real = model_D.train_on_batch(y, real_label+label_noise)
 
         x_fake = model_G.predict_on_batch(x)
-        fake_label = np.ones([batch_size, 1])
+        
         
         loss_D_fake = model_D.train_on_batch(x_fake, fake_label-label_noise2)
 
@@ -4320,25 +4321,43 @@ class CycleGAN(BaseModel):
         
         # Adds random noise to the label data, this can help in the convergence 
         # of the GAN network
+        # Adds random noise to the label data, this can help in the convergence 
+        # of the GAN network
         label_noise = []
         label_noise2 = []
         if(add_label_noise):
-            for i in range(batch_size):
+            if(patch_gan):
+                length = reduce(lambda x, y: x*y, list(batch_size))
+            else:
+                length = batch_size
+            for i in range(length):
                 label_noise.append(random.uniform(0, 0.01))
                 label_noise2.append(random.uniform(0, 0.01))   
             label_noise = np.array(label_noise)
             label_noise2 = np.array(label_noise2)
-            label_noise = np.resize(label_noise, (batch_size, 1))
-            label_noise2 = np.resize(label_noise2, (batch_size, 1))
+            if patch_gan:
+                label_noise = np.resize(label_noise, (batch_size))
+                label_noise2 = np.resize(label_noise2, (batch_size))
+            else:
+                label_noise = np.resize(label_noise, (batch_size,1))
+                label_noise2 = np.resize(label_noise2, (batch_size,1))               
         else:
-            label_noise = np.zeros(batch_size)
-            label_noise2 = np.zeros(batch_size)
+            if patch_gan:
+                label_noise = np.zeros(batch_size)
+                label_noise2 = np.zeros(batch_size)
+            else:
+                label_noise = np.zeros(batch_size, 1)
+                label_noise2 = np.zeros(batch_size, 1)
         
         if y is None:
             y = np.zeros([batch_size, 1])
 
-        facit_real = np.ones([batch_size, 1])
-        facit_fake = np.zeros([batch_size, 1])
+        if patch_gan:
+            real_label = np.zeros(batch_size)
+            fake_label = np.ones(batch_size)
+        else:
+            real_label = np.zeros([batch_size, 1])
+            fake_label = np.ones([batch_size, 1])
 
         # Create fake images with generator
 
@@ -4683,34 +4702,37 @@ class PGAN(BaseModel):
 
         assert(model_GAN is not None)
 
-        batch_size = x.shape[0]
+        batch_size = (x.shape[0], 1024)
         
         # Adds random noise to the label data, this can help in the convergence 
         # of the GAN network
         label_noise = []
         label_noise2 = []
         if(add_label_noise):
-            for i in range(batch_size):
+            
+            length = reduce(lambda x, y: x*y, list(batch_size))
+            for i in range(length):
                 label_noise.append(random.uniform(0, 0.01))
                 label_noise2.append(random.uniform(0, 0.01))   
             label_noise = np.array(label_noise)
             label_noise2 = np.array(label_noise2)
-            label_noise = np.resize(label_noise, (batch_size, 1))
-            label_noise2 = np.resize(label_noise2, (batch_size, 1))
+            label_noise = np.resize(label_noise, (batch_size))
+            label_noise2 = np.resize(label_noise2, (batch_size))
         else:
-            label_noise = np.zeros([batch_size, 1])
-            label_noise2 = np.zeros([batch_size, 1])
+            label_noise = np.zeros(batch_size)
+            label_noise2 = np.zeros(batch_size)
         
         if y is None:
-            y = np.zeros([batch_size, 1])
+            y = np.zeros(batch_size)
 
-        real_label = np.zeros([batch_size, 1])
+        real_label = np.zeros(batch_size)
+        
 
         # Train discriminator
         loss_D_real = model_D.train_on_batch(y, real_label+label_noise)
 
         x_fake = model_G.predict_on_batch(x)
-        fake_label = np.ones([batch_size, 1])
+        fake_label = np.ones(batch_size)
         
         loss_D_fake = model_D.train_on_batch(x_fake, fake_label-label_noise2)
 
