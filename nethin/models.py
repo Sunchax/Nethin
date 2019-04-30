@@ -4702,7 +4702,7 @@ class PGAN(BaseModel):
 
         assert(model_GAN is not None)
 
-        batch_size = (x.shape[0], 1024)
+        batch_size = (x.shape[0], 1)
         
         # Adds random noise to the label data, this can help in the convergence 
         # of the GAN network
@@ -4809,7 +4809,357 @@ class PGAN(BaseModel):
         self._model = self._with_device(self._generate_model)
         self.compile(optimizer, loss, metrics, loss_weights, sample_weight_mode, weighted_metrics, target_tensors)
         
+class PatchGAN(BaseModel):
 
+    def __init__(self,
+                 input_shape,
+                 output_shape,
+                 pgan,
+                 num_iter_discriminator=1,
+                 instance_noise=1.0,
+                 data_format=None,
+                 device=None,
+                 name="PatchGAN"):
+
+        super(PGAN, self).__init__("nethin.models.PatchGAN",
+                                  data_format=data_format,
+                                  device=device,
+                                  name=name)
+
+        if input_shape is not None:
+            if not isinstance(input_shape, (tuple, list)):
+                raise ValueError('"input_shape" must be a tuple.')
+        self.input_shape = tuple([int(d) for d in input_shape])
+
+        if output_shape is not None:
+            if not isinstance(output_shape, (tuple, list)):
+                raise ValueError('"data_shape" must be a tuple.')
+        self.output_shape = tuple([int(d) for d in output_shape])
+
+        self.pgan=pgan
+        self.num_iter_discriminator = max(1, int(num_iter_discriminator))
+        if instance_noise is None:
+            self.instance_noise = instance_noise
+        else:
+            self.instance_noise = max(0.0, float(instance_noise))
+
+        if self.data_format == "channels_last":
+            self._axis = 3
+        else:  # data_format == "channels_first":
+            self._axis = 1
+
+        self._model = self._with_device(self._generate_model)
+        self._batch_updates = 0
+        self._iterations = 0
+
+    def _generate_model(self):
+
+        self._D = self.pgan.get_discriminator()
+        self._G = self.pgan.get_generator()
+
+        def _generate_D():
+
+            inputs = Input(shape=self.output_shape)
+            outputs = self._D(inputs)
+            model_D = Model(inputs, outputs)
+
+            return model_D
+
+        def _generate_G():
+
+            inputs = Input(shape=self.input_shape)
+            outputs = self._G(inputs)
+            model_G = Model(inputs, outputs)
+
+            return model_G
+
+        def _generate_GAN(G, D):
+
+            inputs = Input(shape=self.input_shape)
+            x = G(inputs)
+            D.trainable = False
+            outputs = D(x)
+
+            model_GAN = Model(inputs, outputs)
+
+            return model_GAN
+
+        model_G = _generate_G()
+        model_D = _generate_D()
+
+        self._model_GAN_factory = _generate_GAN
+
+        return [model_G, model_D, None]
+
+    def compile(self,
+                optimizer,
+                loss,
+                metrics=None,
+                loss_weights=None,
+                sample_weight_mode=None,
+                weighted_metrics=None,
+                target_tensors=None):
+        """Configures the model for training.
+
+        Parameters
+        ----------
+        optimizer : str, keras.optimizers.Optimizer or list of str or
+                    keras.optimizers.Optimizer, length 2
+            String (name of optimizer) or optimizer object. See
+            `optimizers <https://keras.io/optimizers>`_. If a list, the first
+            optimiser is used for the discriminator and the second optimiser is
+            used for the adversarial model.
+
+        loss : str or list of str, length 2
+            String (name of objective function) or objective function. See
+            `losses <https://keras.io/losses>`_. If a list, the first loss is
+            used for the discriminator and the second loss is used for the
+            adversarial model.
+
+         metrics : list of str or list of list of str, length 2, optional
+             List of metrics to be evaluated by the model during training and
+             testing. Typically you will use ``metrics=["accuracy"]``. If a
+             list of lists of str, the first list of metrics are used for the
+             discriminator and the second list of metrics is used for the
+             adversarial model.
+
+        loss_weights : list or dict, optional
+            Currently ignored by this model.
+
+        sample_weight_mode : None, str, list or dict, optional
+            Currently ignored by this model.
+
+        weighted_metrics : list, optional
+            Currently ignored by this model.
+
+        target_tensors : Tensor, optional
+            Currently ignored by this model.
+
+        **kwargs
+            When using the Theano/CNTK backends, these arguments are passed
+            into ``K.function``. When using the TensorFlow backend, these
+            arguments are passed into ``tf.Session.run``.
+
+        Raises
+        ------
+        ValueError
+            In case of invalid arguments for ``optimizer``, ``loss``,
+            ``metrics`` or ``sample_weight_mode``.
+        """
+        if (weighted_metrics is None) and (target_tensors is None):
+            # Recent additions to compile may not be available.
+            self._with_device(self._compile,
+                              optimizer,
+                              loss,
+                              metrics=metrics,
+                              loss_weights=loss_weights,
+                              sample_weight_mode=sample_weight_mode)
+        else:
+            self._with_device(self._compile,
+                              optimizer,
+                              loss,
+                              metrics=metrics,
+                              loss_weights=loss_weights,
+                              sample_weight_mode=sample_weight_mode,
+                              weighted_metrics=weighted_metrics,
+                              target_tensors=target_tensors)
+
+    def _compile(self,
+                 optimizer,
+                 loss,
+                 metrics=None,
+                 loss_weights=None,
+                 sample_weight_mode=None,
+                 weighted_metrics=None,
+                 target_tensors=None):
+        
+        self._compile_input=(optimizer, loss, metrics, loss_weights, sample_weight_mode,
+                             weighted_metrics, target_tensors)
+
+        optimizer = utils.normalize_object(optimizer, 2, "optimizers")
+        loss = utils.normalize_str(loss, 2, "losses")
+        if metrics is not None:
+            if isinstance(metrics, list):
+                if isinstance(metrics[0], str):
+                    metrics = (metrics,) * 2
+                elif not isinstance(metrics, list):
+                    raise ValueError('The "metrics" argument must be a list '
+                                     'of str or a list of a list of str.')
+            else:
+                raise ValueError('The "metrics" argument must be a list of '
+                                 'str or a list of a list of str.')
+        else:
+            metrics = [metrics, metrics]
+
+        model_G, model_D, model_GAN = self._model
+
+        model_D.compile(optimizer=optimizer[0],
+                        loss=loss[0],
+                        metrics=metrics[0])
+        
+        if model_GAN is None:
+            model_GAN = self._model_GAN_factory(model_G, model_D)
+
+        model_GAN.compile(optimizer=optimizer[1],
+                          loss=loss[1],
+                          metrics=metrics[1])
+
+        self._model = [model_G, model_D, model_GAN]
+
+    def train_on_batch(self,
+                       x,
+                       y=None,
+                       sample_weight=None,
+                       class_weight=None):
+        """Runs a single gradient update on a single batch of data.
+
+        Arguments
+        ---------
+        x : numpy.ndarray or list of numpy.ndarray or dict of numpy.ndarray
+            Numpy array of training data, or list of Numpy arrays if the model
+            has multiple inputs. If all inputs in the model are named, you can
+            also pass a dictionary mapping input names to Numpy arrays.
+
+        y : numpy.ndarray or list of numpy.ndarray or dict of numpy.ndarray,
+            optional
+            Numpy array of target data, or list of Numpy arrays if the model
+            has multiple outputs. If all outputs in the model are named, you
+            can also pass a dictionary mapping output names to Numpy arrays.
+
+        sample_weight : numpy.ndarray, optional
+            Optional array of the same length as ``x``, containing weights to
+            apply to the model's loss for each sample. In the case of temporal
+            data, you can pass a 2D array with shape (samples,
+            sequence_length), to apply a different weight to every timestep of
+            every sample. In this case you should make sure to specify
+            ``sample_weight_mode="temporal"`` in ``compile()``.
+
+        class_weight : dict, optional
+            Optional dictionary mapping class indices (integers) to a weight
+            (float) to apply to the model's loss for the samples from this
+            class during training. This can be useful to tell the model to
+            "pay more attention" to samples from an under-represented class.
+
+        Returns
+        -------
+        Scalar training loss (if the model has a single output and no metrics)
+        or list of scalars (if the model has multiple outputs and/or metrics).
+        The attribute ``model.metrics_names`` will give you the display labels
+        for the scalar outputs. Returns the discriminator loss followed by the
+        adversarial model's loss.
+        """
+        return self._with_device(self._train_on_batch,
+                                 x,
+                                 y,
+                                 sample_weight=sample_weight,
+                                 class_weight=class_weight)
+
+    def _train_on_batch(self,
+                        x,
+                        y=None,
+                        sample_weight=None,
+                        class_weight=None):
+
+        add_label_noise=True
+
+        model_G, model_D, model_GAN = self._model
+
+        assert(model_GAN is not None)
+
+        batch_size = (x.shape[0], 1024)
+        
+        # Adds random noise to the label data, this can help in the convergence 
+        # of the GAN network
+        label_noise = []
+        label_noise2 = []
+        if(add_label_noise):
+            
+            length = reduce(lambda x, y: x*y, list(batch_size))
+            for i in range(length):
+                label_noise.append(random.uniform(0, 0.01))
+                label_noise2.append(random.uniform(0, 0.01))   
+            label_noise = np.array(label_noise)
+            label_noise2 = np.array(label_noise2)
+            label_noise = np.resize(label_noise, (batch_size))
+            label_noise2 = np.resize(label_noise2, (batch_size))
+        else:
+            label_noise = np.zeros(batch_size)
+            label_noise2 = np.zeros(batch_size)
+        
+        if y is None:
+            y = np.zeros(batch_size)
+
+        real_label = np.zeros(batch_size)
+        
+
+        # Train discriminator
+        loss_D_real = model_D.train_on_batch(y, real_label+label_noise)
+
+        x_fake = model_G.predict_on_batch(x)
+        fake_label = np.ones(batch_size)
+        
+        loss_D_fake = model_D.train_on_batch(x_fake, fake_label-label_noise2)
+
+        loss_D = (0.5 * np.add(loss_D_real, loss_D_fake)).tolist()
+
+        # Train GAN model (the generator part)
+        loss_GAN = None
+        if (self._batch_updates + 1) % self.num_iter_discriminator == 0:
+
+            loss_GAN = model_GAN.train_on_batch(x, real_label)
+
+            self._iterations += 1
+
+        self._batch_updates += 1
+        self.pgan.increment_batch()
+
+        self.metrics_names = [model_D.metrics_names,
+                              "DiscriminatorReal",
+                              "DiscriminatorFake",
+                              model_GAN.metrics_names]
+
+        return loss_D, loss_D_real, loss_D_fake, loss_GAN
+    
+    def _gan_predict(self, x):
+        
+        model_G, model_D, model_GAN = self._model
+        return model_G.predict_on_batch(x)
+    
+
+    def save_models(self, dir_path, file_names=["g_G.h5", "g_D.h5"]):
+    
+
+        if(len(file_names) != 2):
+            #Throw exception
+            raise ValueError('Need two file-names, recieved ' + str(len(file_names)))
+        
+        if(dir_path is not None):
+        
+            #Should save .txt file with meta-data
+            
+            G_path = dir_path + "/" + file_names[0]
+            D_path = dir_path + "/" + file_names[1]  
+            
+            model_G, model_D, model_GAN = self._model
+        
+            model_G.save(G_path)
+            model_D.save(D_path)
+            
+    def load_models(self, dir_path, file_names=["g_G.h5", "g_D.h5"]):
+        
+        if(dir_path is not None):
+            if(len(file_names) != 2):
+                #Throw exception
+                raise ValueError('Need two file-names, recieved ' + str(len(file_names)))
+            
+            G_path = dir_path + "/" + file_names[0]
+            D_path = dir_path + "/" + file_names[1]  
+            
+            model_G = load_model(G_path)
+            model_D =load_model(D_path)
+
+        return model_G, model_D
+    
 
 if __name__ == "__main__":
     import doctest
