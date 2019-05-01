@@ -4851,6 +4851,8 @@ class PatchGAN(BaseModel):
         self._discriminator = discriminator
         self._generator = generator        
         self._model = self._with_device(self._generate_model)
+        self._batch_updates = 0
+        self._iterations = 0
 
 
     def _generate_model(self): 
@@ -5110,6 +5112,8 @@ class PatchGAN(BaseModel):
             loss_GAN = model_GAN.train_on_batch(x, real_label)
 
             self._iterations += 1
+            
+        self._batch_updates += 1
 
 
         self.metrics_names = [model_D.metrics_names,
