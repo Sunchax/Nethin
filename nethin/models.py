@@ -4852,7 +4852,7 @@ class PatchGAN(BaseModel):
         self._batch_updates = 0
         self._iterations = 0
 
-    def _generate_model(self):
+    def _generate_model(self): 
 
         self._D = self.discriminator()
         self._G = self.generator()
