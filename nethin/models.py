@@ -4814,14 +4814,15 @@ class PatchGAN(BaseModel):
     def __init__(self,
                  input_shape,
                  output_shape,
-                 pgan,
+                 generator,
+                 discriminator,
                  num_iter_discriminator=1,
                  instance_noise=1.0,
                  data_format=None,
                  device=None,
                  name="PatchGAN"):
 
-        super(PGAN, self).__init__("nethin.models.PatchGAN",
+        super(PatchGAN, self).__init__("nethin.models.PatchGAN",
                                   data_format=data_format,
                                   device=device,
                                   name=name)
@@ -4836,7 +4837,6 @@ class PatchGAN(BaseModel):
                 raise ValueError('"data_shape" must be a tuple.')
         self.output_shape = tuple([int(d) for d in output_shape])
 
-        self.pgan=pgan
         self.num_iter_discriminator = max(1, int(num_iter_discriminator))
         if instance_noise is None:
             self.instance_noise = instance_noise
@@ -4854,8 +4854,8 @@ class PatchGAN(BaseModel):
 
     def _generate_model(self):
 
-        self._D = self.pgan.get_discriminator()
-        self._G = self.pgan.get_generator()
+        self._D = self.discriminator()
+        self._G = self.generator()
 
         def _generate_D():
 
@@ -5110,8 +5110,6 @@ class PatchGAN(BaseModel):
 
             self._iterations += 1
 
-        self._batch_updates += 1
-        self.pgan.increment_batch()
 
         self.metrics_names = [model_D.metrics_names,
                               "DiscriminatorReal",
