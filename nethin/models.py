@@ -4851,6 +4851,8 @@ class PatchGAN(BaseModel):
         self._model = self._with_device(self._generate_model)
         self._batch_updates = 0
         self._iterations = 0
+        self.discriminator = discriminator
+        self.generator = generator
 
     def _generate_model(self): 
 
