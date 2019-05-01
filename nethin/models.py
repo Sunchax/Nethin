@@ -4847,17 +4847,16 @@ class PatchGAN(BaseModel):
             self._axis = 3
         else:  # data_format == "channels_first":
             self._axis = 1
-
+            
+        self._discriminator = discriminator
+        self._generator = generator        
         self._model = self._with_device(self._generate_model)
-        self._batch_updates = 0
-        self._iterations = 0
-        self.discriminator = discriminator
-        self.generator = generator
+
 
     def _generate_model(self): 
 
-        self._D = self.discriminator()
-        self._G = self.generator()
+        self._D = self._discriminator()
+        self._G = self._generator()
 
         def _generate_D():
 
