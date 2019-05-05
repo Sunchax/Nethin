@@ -4010,6 +4010,7 @@ class CycleGAN(BaseModel):
                  instance_noise=1.0,
                  data_format=None,
                  device=None,
+                 patch_gan=False,
                  name="CycleGAN"):
 
         super(CycleGAN, self).__init__("nethin.models.CycleGAN",
@@ -4041,6 +4042,7 @@ class CycleGAN(BaseModel):
             self._axis = 1
 
         self._model = self._with_device(self._generate_model)
+        self.patch_gan = patch_gan
         self._batch_updates = 0
         self._iterations = 0
 
@@ -4056,6 +4058,8 @@ class CycleGAN(BaseModel):
         self._G_B2A = self.generator()
         self._G_B2A.name="UNet_B2A"
         self._G_B2A.model.name="UNet_B2A"
+
+        
         input_A = Input(shape=self.output_shape, name="image_A")
         input_B = Input(shape=self.output_shape, name="image_B")
 
@@ -4312,7 +4316,7 @@ class CycleGAN(BaseModel):
 
         assert(model_combined is not None)
         
-        patch_gan = False
+        patch_gan = self.patch_gan
         add_label_noise= False
 
         batch_size = x.shape[0]
