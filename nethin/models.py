@@ -4346,8 +4346,8 @@ class CycleGAN(BaseModel):
                 label_noise = np.zeros(batch_size)
                 label_noise2 = np.zeros(batch_size)
             else:
-                label_noise = np.zeros(batch_size, 1)
-                label_noise2 = np.zeros(batch_size, 1)
+                label_noise = np.zeros((batch_size, 1))
+                label_noise2 = np.zeros((batch_size, 1))
         
         if y is None:
             y = np.zeros([batch_size, 1])
