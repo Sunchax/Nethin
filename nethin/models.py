@@ -4313,7 +4313,7 @@ class CycleGAN(BaseModel):
         assert(model_combined is not None)
         
         patch_gan = False
-        add_label_noise= True
+        add_label_noise= False
 
         batch_size = x.shape[0]
         if(patch_gan == True):
@@ -4366,12 +4366,12 @@ class CycleGAN(BaseModel):
 
         # Train discriminator
 
-        loss_D_AB_real = model_D_B.train_on_batch(y, facit_real-label_noise)
-        loss_D_AB_fake = model_D_B.train_on_batch(y_fake, facit_fake+label_noise2)
+        loss_D_AB_real = model_D_B.train_on_batch(y, real_label-label_noise)
+        loss_D_AB_fake = model_D_B.train_on_batch(y_fake, fake_label+label_noise2)
         loss_D_AB = (0.5 * np.add(loss_D_AB_real, loss_D_AB_fake)).tolist()
                 
-        loss_D_BA_real = model_D_A.train_on_batch(x, facit_real-label_noise2)
-        loss_D_BA_fake = model_D_A.train_on_batch(x_fake, facit_fake+label_noise)
+        loss_D_BA_real = model_D_A.train_on_batch(x, real_label-label_noise2)
+        loss_D_BA_fake = model_D_A.train_on_batch(x_fake, fake_label+label_noise)
         loss_D_BA = (0.5 * np.add(loss_D_BA_real, loss_D_BA_fake)).tolist()
         
         loss_D = (0.5 * np.add(loss_D_AB, loss_D_BA))
@@ -4380,7 +4380,7 @@ class CycleGAN(BaseModel):
         loss_combined = None
         if (self._batch_updates + 1) % self.num_iter_discriminator == 0:
 
-            loss_combined = model_combined.train_on_batch([x, y], [facit_real-label_noise2, facit_real-label_noise, x, y])
+            loss_combined = model_combined.train_on_batch([x, y], [real_label-label_noise2, real_label-label_noise, x, y])
 
             self._iterations += 1
 
@@ -5063,7 +5063,7 @@ class PatchGAN(BaseModel):
                         sample_weight=None,
                         class_weight=None):
 
-        add_label_noise=True
+        add_label_noise=False
 
         model_G, model_D, model_GAN = self._model
 
