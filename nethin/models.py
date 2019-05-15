@@ -4011,6 +4011,7 @@ class CycleGAN(BaseModel):
                  data_format=None,
                  device=None,
                  patch_gan=False,
+                 cycle_weight_rate=10,
                  name="CycleGAN"):
 
         super(CycleGAN, self).__init__("nethin.models.CycleGAN",
@@ -4044,6 +4045,7 @@ class CycleGAN(BaseModel):
         self._model = self._with_device(self._generate_model)
         self.patch_gan = patch_gan
         self._batch_updates = 0
+        self.cycle_weight_rate = cycle_weight_rate
         self._iterations = 0
 
     def _generate_model(self):
@@ -4249,7 +4251,7 @@ class CycleGAN(BaseModel):
             model_combined = Model(inputs=[self._real_A, self._real_B], 
                                    outputs=model_outputs, name="CycleGAN")
 
-        lambda_cycle = 10
+        lambda_cycle = self.cycle_weight_rate
 
         model_combined.compile(loss=[loss[1], loss[1],
                                      loss[2], loss[2]],
