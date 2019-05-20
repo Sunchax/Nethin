@@ -4223,6 +4223,8 @@ class CycleGAN(BaseModel):
                                  'str or a list of a list of str.')
         else:
             metrics = [metrics, metrics]
+            
+        print(loss + str(loss))
 
         model_G_AB, model_D_A, model_G_BA, model_D_B, model_combined = self._model
 
@@ -4244,7 +4246,7 @@ class CycleGAN(BaseModel):
         model_GAN_ABA= self._G_B2A(model_G_AB)
         model_GAN_BAB= self._G_A2B(model_G_BA)
         
-        model_outputs= [model_GAN_AB, model_GAN_BA, model_GAN_ABA, model_GAN_BAB, ]
+        model_outputs= [model_GAN_AB, model_GAN_BA, model_GAN_ABA, model_GAN_BAB]
 
 
         if model_combined is None:

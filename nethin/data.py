@@ -2112,7 +2112,7 @@ class Dicom2DDataset(DicomDataset):
 
         # Use the custom reader, if there is one
         if self.custom_reader is not None:
-            return self.custom_reader(self, file)
+            return self.custom_reader(file)
 
         data = pydicom.dcmread(file)
         image = data.pixel_array.astype(float)
