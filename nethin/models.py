@@ -4246,7 +4246,10 @@ class CycleGAN(BaseModel):
         model_GAN_ABA= self._G_B2A(model_G_AB)
         model_GAN_BAB= self._G_A2B(model_G_BA)
         
-        model_outputs= [model_GAN_AB, model_GAN_BA, model_GAN_ABA, model_GAN_BAB]
+        model_A_id = self._G_B2A(self._real_A)
+        model_B_id = self._G_A2B(self._real_B)
+        
+        model_outputs= [model_GAN_AB, model_GAN_BA, model_GAN_ABA, model_GAN_BAB, model_A_id, model_B_id]
 
 
         if model_combined is None:
@@ -4256,8 +4259,9 @@ class CycleGAN(BaseModel):
         lambda_cycle = self.cycle_weight_rate
 
         model_combined.compile(loss=[loss[1], loss[1],
+                                     loss[2], loss[2]
                                      loss[2], loss[2]],
-                                loss_weights=[1, 1, lambda_cycle, lambda_cycle],
+                                loss_weights=[1, 1, lambda_cycle, lambda_cycle, 1, 1],
                                 optimizer=optimizer[1])
         
         self._model = [model_G_AB, model_D_A, model_G_BA, model_D_B, model_combined]
@@ -4388,7 +4392,7 @@ class CycleGAN(BaseModel):
         loss_combined = None
         if (self._batch_updates + 1) % self.num_iter_discriminator == 0:
 
-            loss_combined = model_combined.train_on_batch([x, y], [real_label-label_noise2, real_label-label_noise, x, y])
+            loss_combined = model_combined.train_on_batch([x, y], [real_label-label_noise2, real_label-label_noise, x, y, x, y])
 
             self._iterations += 1
 
