@@ -4054,12 +4054,12 @@ class CycleGAN(BaseModel):
         self._D_A.name="D_A"
         self._D_B = self.discriminator()
         self._D_B.name="D_B"
-        self._G_A2B = self.generator()
-        self._G_A2B.name="UNet_A2B"
-        self._G_A2B.model.name="UNet_A2B"
-        self._G_B2A = self.generator()
-        self._G_B2A.name="UNet_B2A"
-        self._G_B2A.model.name="UNet_B2A"
+        self._G_A2B = self.generator(name="UNet_A2B")
+        #self._G_A2B.name="UNet_A2B"
+        #self._G_A2B.model.name="UNet_A2B"
+        self._G_B2A = self.generator(name="UNet_B2A")
+        #self._G_B2A.name="UNet_B2A"
+        #self._G_B2A.model.name="UNet_B2A"
 
         
         input_A = Input(shape=self.output_shape, name="image_A")
@@ -4107,8 +4107,8 @@ class CycleGAN(BaseModel):
         guess_A = self._D_A(input_A)
         guess_B = self._D_B(input_B)
         
-        model_D_A = Model(inputs=input_A, outputs=guess_A, name="D_A")
-        model_D_B = Model(inputs=input_B, outputs=guess_B, name="D_B")
+        model_D_A = Model(inputs=input_A, outputs=guess_A, name="D_A_model")
+        model_D_B = Model(inputs=input_B, outputs=guess_B, name="D_B_model")
         
         self._static_D_A = Network(inputs=input_A, outputs=guess_A, name="static_D_A")
         self._static_D_B = Network(inputs=input_B, outputs=guess_B, name="static_D_B")
@@ -4118,9 +4118,11 @@ class CycleGAN(BaseModel):
         
 
         
+        #model_G_AB = self._G_A2B(self._real_A)
+        #model_G_BA = self._G_B2A(self._real_B)
+        
         model_G_AB = self._G_A2B(self._real_A)
         model_G_BA = self._G_B2A(self._real_B)
-        
         
         self._model_GAN_factory = _generate_GAN
         self._model_Circel_Gen_factory = _generate_c_G
@@ -4224,7 +4226,6 @@ class CycleGAN(BaseModel):
         else:
             metrics = [metrics, metrics]
             
-        print(loss + str(loss))
 
         model_G_AB, model_D_A, model_G_BA, model_D_B, model_combined = self._model
 
@@ -4243,23 +4244,24 @@ class CycleGAN(BaseModel):
         model_GAN_AB = self._static_D_B(model_G_AB)
         model_GAN_BA = self._static_D_A(model_G_BA)
         
+        
         model_GAN_ABA= self._G_B2A(model_G_AB)
         model_GAN_BAB= self._G_A2B(model_G_BA)
+        
         
         model_A_id = self._G_B2A(self._real_A)
         model_B_id = self._G_A2B(self._real_B)
         
+        
         model_outputs= [model_GAN_AB, model_GAN_BA, model_GAN_ABA, model_GAN_BAB, model_A_id, model_B_id]
-
 
         if model_combined is None:
             model_combined = Model(inputs=[self._real_A, self._real_B], 
                                    outputs=model_outputs, name="CycleGAN")
-
         lambda_cycle = self.cycle_weight_rate
 
         model_combined.compile(loss=[loss[1], loss[1],
-                                     loss[2], loss[2]
+                                     loss[2], loss[2],
                                      loss[2], loss[2]],
                                 loss_weights=[1, 1, lambda_cycle, lambda_cycle, 1, 1],
                                 optimizer=optimizer[1])
@@ -4365,11 +4367,15 @@ class CycleGAN(BaseModel):
             y = np.zeros([batch_size, 1])
 
         if patch_gan:
-            real_label = np.zeros(batch_size)
-            fake_label = np.ones(batch_size)
+            real_label = np.ones(batch_size)
+            fake_label = np.zeros(batch_size)
+            #real_label = np.zeros(batch_size)
+            #fake_label = np.ones(batch_size)
         else:
-            real_label = np.zeros([batch_size, 1])
-            fake_label = np.ones([batch_size, 1])
+            real_label = np.ones([batch_size, 1])
+            fake_label = np.zeros([batch_size, 1])
+            #real_label = np.zeros([batch_size, 1])
+            #fake_label = np.ones([batch_size, 1])
 
         # Create fake images with generator
 
@@ -4378,12 +4384,12 @@ class CycleGAN(BaseModel):
 
         # Train discriminator
 
-        loss_D_AB_real = model_D_B.train_on_batch(y, real_label-label_noise)
-        loss_D_AB_fake = model_D_B.train_on_batch(y_fake, fake_label+label_noise2)
+        loss_D_AB_real = model_D_B.train_on_batch(y, real_label)
+        loss_D_AB_fake = model_D_B.train_on_batch(y_fake, fake_label)
         loss_D_AB = (0.5 * np.add(loss_D_AB_real, loss_D_AB_fake)).tolist()
                 
-        loss_D_BA_real = model_D_A.train_on_batch(x, real_label-label_noise2)
-        loss_D_BA_fake = model_D_A.train_on_batch(x_fake, fake_label+label_noise)
+        loss_D_BA_real = model_D_A.train_on_batch(x, real_label)
+        loss_D_BA_fake = model_D_A.train_on_batch(x_fake, fake_label)
         loss_D_BA = (0.5 * np.add(loss_D_BA_real, loss_D_BA_fake)).tolist()
         
         loss_D = (0.5 * np.add(loss_D_AB, loss_D_BA))
@@ -4392,7 +4398,7 @@ class CycleGAN(BaseModel):
         loss_combined = None
         if (self._batch_updates + 1) % self.num_iter_discriminator == 0:
 
-            loss_combined = model_combined.train_on_batch([x, y], [real_label-label_noise2, real_label-label_noise, x, y, x, y])
+            loss_combined = model_combined.train_on_batch([x, y], [real_label, real_label, x, y, x, y])
 
             self._iterations += 1
 
@@ -4402,16 +4408,14 @@ class CycleGAN(BaseModel):
                               "DiscriminatorReal",
                               "DiscriminatorFake",
                               model_combined.metrics_names]
-        
-        self._model = model_G_AB, model_D_A, model_G_BA, model_D_B, model_combined
 
         return loss_D, loss_D_AB, loss_D_BA, loss_combined
     
-    def _gan_predict(self, x):
-        
+    def _gan_predict_A2B(self, x):
+
         return self._G_A2B.predict_on_batch(x)
     
-    def _gan_reverse_predict(self, y):
+    def _gan_predict_B2A(self, y):
         
         return self._G_B2A.predict_on_batch(y)
 
